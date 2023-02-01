@@ -1,0 +1,40 @@
+<main>
+    <form>
+        <p>
+            <label>
+                Hash <input type="text" name="cam" required>
+            </label>
+        </p>
+        <p>
+            <label>
+                Password <input type="password" name="psw" required>
+            </label>
+        </p>
+        <button type="submit">Submit</button>
+    </form>
+</main>
+<script>
+    document.querySelector('form').onsubmit = e => {
+        e.preventDefault();
+        const data = {};
+        for (const pair of new FormData(e.target)) {
+            data[pair[0]] = pair[1];
+        }
+        fetch('/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(r => r)
+        .then(data => {
+            if (data.ok) {
+                window.location.reload();
+            }
+            for (const i of document.querySelectorAll('form input')) {
+                i.classList.add('error');
+            }
+        });
+    }
+</script>

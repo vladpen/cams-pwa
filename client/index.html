@@ -1,0 +1,21 @@
+<main><ul class="nav"></ul></main>
+<script>
+    const appendRow = (key, val, kind) => {
+        let li = document.createElement('li');
+        let a = document.createElement('a');
+        a.href = `/?page=${kind}&hash=${key}`;
+        a.innerHTML = val.name;
+        li.classList.add(kind);
+        li.append(a);
+        document.querySelector('ul').append(li);
+    }
+    for (const [key, val] of Object.entries({cams})) {
+        appendRow(key, val, 'cam');
+    }
+    for (const [key, val] of Object.entries({groups})) {
+        appendRow(key, val, 'group');
+    }
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+</script>
