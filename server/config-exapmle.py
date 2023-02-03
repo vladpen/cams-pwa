@@ -9,8 +9,16 @@ class Config:
         'some-URL-compatible-string/including-UTF-characters': {
             'path': 'some folder in the storage_path',
             'url': 'rtsp://<login>:<password>@<host>:554/<uri>',
-            'name': '❄️ Any camera name',
+            'name': 'Any camera name',
         },
+    }
+
+    # Temporary group settings
+    groups = {
+        'grp1': {
+            'cams': ['camera-hash'],
+            'name': '❄️ Group 1',
+        }
     }
 
     # Web page title
