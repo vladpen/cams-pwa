@@ -151,7 +151,7 @@ class Files:
         return datetime.strptime(self._get_folders()[0], '%Y%m%d')
 
     def _get_next_motion_by_date_time(self, date_time: str, sensitivity: int, step: int) -> Tuple[str, int]:
-        if step >= 60 or step < -60:
+        if step >= 60 or step <= -60:
             sign = 1 if step > 0 else -1
             folder = (
                 datetime.strptime(date_time, self.DT_FULL_FORMAT) + timedelta(seconds=abs(step)) * sign
