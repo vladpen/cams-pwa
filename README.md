@@ -78,4 +78,8 @@ sudo systemctl enable cams-pwa
 sudo systemctl start cams-pwa
 ```
 
+### Дополнительные сведения
+
+Подробное описание приложения: [habr.com/ru/post/715016](https://habr.com/ru/post/715016/)
+
 *Copyright (c) 2023 vladpen under MIT license. Use it with absolutely no warranty.*
