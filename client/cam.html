@@ -6,7 +6,7 @@
     <span class="loader"></span>
 </header>
 <main>
-    <div class="video-box">
+    <div class="video-box" id="vb0">
         <video class="active"></video>
         <video class="hidden"></video>
     </div>
@@ -48,7 +48,7 @@
 <script src="/js/cam.js"></script>
 <script>
     const cam = new Cam();
-    cam.run({days});
+    cam.run('vb0', {days});
     if ('wakeLock' in navigator) {
         navigator.wakeLock.request('screen');
     }

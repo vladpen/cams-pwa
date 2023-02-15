@@ -43,8 +43,8 @@ class Handler(BaseHTTPRequestHandler):
         """
         self._init()
 
-        query = parse_qs(urlparse(self.path).query)
-        if not query:
+        self._query = parse_qs(urlparse(self.path).query)
+        if not self._query:
             if not re.search(r'^/([a-z]+/)*[a-z\d.]*$', self.path):
                 return self._send_error()
 
@@ -55,32 +55,32 @@ class Handler(BaseHTTPRequestHandler):
 
             return self._send_template(template)
 
-        if 'hash' not in query:
+        if 'hash' not in self._query:
             return self._send_error()
 
-        self.hash = query['hash'][0]
+        self.hash = self._query['hash'][0]
         if not self.auth.info() or (self.auth.info() != Config.master_cam_hash and self.auth.info() != self.hash):
             return self._send_error(403)
         if self.hash not in Config.cameras and (not hasattr(Config, 'groups') or self.hash not in Config.groups):
             return self._send_error()
 
-        if 'page' in query:
-            tpl = query["page"][0]
+        if 'page' in self._query:
+            tpl = self._query["page"][0]
             if tpl not in ['cam', 'group']:
                 return self._send_error()
             return self._send_template(f'/{tpl}.html')
 
-        self.files = Files(self.hash, self.cookie)
+        self.files = Files(self.hash, self._query)
         self.cam_path = Config.cameras[self.hash]['path']
 
-        if 'live' in query:
+        if 'live' in self._query:
             return self._send_video(*self.files.get_live())
-        elif 'range' in query:
-            return self._send_video(*self.files.get_by_range(query))
-        elif 'next' in query:
-            if 'dt' not in query:
-                return self._send_video(*self.files.get_live())
-            return self._send_video(*self.files.get_next_by_date_time(query['dt'][0], query))
+        elif 'range' in self._query:
+            return self._send_video(*self.files.get_by_range())
+        elif 'next' in self._query:
+            # if 'dt' not in query:
+            #    return self._send_video(*self.files.get_live(query))
+            return self._send_video(*self.files.get_next())
 
         self._send_error()
 
@@ -169,20 +169,23 @@ class Handler(BaseHTTPRequestHandler):
             Log.print(f'Web: ERROR: content not found: "{template}" ({repr(e)})')
 
     def _send_video(self, file_path: str, file_size: int) -> None:
-        if not file_size:
-            return self._send_error()
+        query_date_time = self._query['dt'][0] if 'dt' in self._query else ''
+        file_date_time = self.files.get_datetime_by_path(file_path)
 
         self.send_response(200)
-        self.send_header('Content-Type', 'video/mp4')
-        self.send_header('Content-Length', str(file_size))
-        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-        self.send_header('Pragma', 'no-cache')
-        self.send_header('Expires', '0')
-        self.send_header('Set-Cookie', f'dt={self.files.get_datetime_by_path(file_path)}')
-        self.send_header('Set-Cookie', f'rng={self.cookie["rng"].value}')
-        self.end_headers()
-        with open(file_path, 'rb') as video_file:
-            self.wfile.write(video_file.read())
+        if file_path and file_size and query_date_time != file_date_time:
+            self.send_header('Content-Type', 'video/mp4')
+            self.send_header('Content-Length', str(file_size))
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
+            self.send_header('X-Datetime', file_date_time)
+            self.send_header('X-Range', self.files.get_range_by_path(file_path))
+            self.end_headers()
+            with open(file_path, 'rb') as video_file:
+                self.wfile.write(video_file.read())
+        else:
+            self.end_headers()
 
     def _send_error(self, code: int = 404) -> None:
         self.send_response(code)

@@ -1,16 +1,17 @@
 class Group extends Base {
     run = (cams) => {
         const box = document.querySelector('.group-box');
-        for (const hash of cams) {
-            let frame = document.createElement('div');
+        for (let i = 0; i < cams.length; i++) { //  const hash of cams
+            const hash = cams[i];
+            const frame = document.createElement('div');
+            frame.id = 'vb' + i;
             frame.classList.add('video-box');
-            let active = document.createElement('video');
-            active.classList.add('active');
-            frame.append(active);
-            let hidden = document.createElement('video');
-            hidden.classList.add('hidden');
-            frame.append(hidden);
             box.append(frame);
+            const active = document.createElement('video');
+            active.classList.add('active');
+            const hidden = document.createElement('video');
+            hidden.classList.add('hidden');
+            frame.append(active, hidden);
 
             frame.onclick = () => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -19,7 +20,7 @@ class Group extends Base {
                 frame.append(overlay);
             }
             const player = new Player();
-            player.start(frame, hash);
+            player.start(frame.id, hash);
         }
         window.onclick = this.resizeBars;
         document.onscroll = this.hideBars;

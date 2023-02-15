@@ -1,7 +1,7 @@
 class Cam extends Base {
-    _videoBox = document.querySelector('.video-box');
+    run = (id, days) => {
+        this._videoBox = document.getElementById(id);
 
-    run = (days) => {
         const urlParams = new URLSearchParams(window.location.search);
 
         this.header.querySelector('.back').onclick = () => {
@@ -23,8 +23,9 @@ class Cam extends Base {
         this._onResize();
 
         this._player = new Player()
-        this._player.start(this._videoBox, urlParams.get('hash'));
+        this._player.start(id, urlParams.get('hash'));
 
+        this.showPauseBtn();
         this.btnPlay.onclick = this._togglePlay;
         this.btnPause.onclick = this._togglePlay;
 
@@ -97,7 +98,6 @@ class Cam extends Base {
             this._videoBox.style.width = width + 'px';
             this._videoBox.style.height = width / this.ASPECT_RATIO + 'px';
         } else {
-            // todo: fix
             let heihgt = window.innerHeight * scale;
             this._videoBox.style.height = heihgt + 'px';
             this._videoBox.style.width = heihgt * this.ASPECT_RATIO + 'px';

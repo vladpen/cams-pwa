@@ -1,105 +1,89 @@
 class Player extends Base {
-    _isSrcSet = false;
     _lock = false;
-    _isSrcSet = false;
-    _active_date_time;
+    _timerId;
 
-    start = (videoBox, hash) => {
-        this._videoBox = videoBox;
-        this._liveUrl = '/?live=1&hash=' + hash;
-        this._rangeUrl = '/?range={range}&hash=' + hash;
+    start = (id, hash) => {
+        this._id = id;
+        this._videoBox = document.getElementById(id);
+        this._liveUrl = '/?live=1&dt={dt}&hash=' + hash;
+        this._rangeUrl = '/?range={range}&dt={dt}&hash=' + hash;
         this._nextUrl = '/?next={step}&dt={dt}&hash=' + hash;
 
         const active = this._videoBox.querySelector('.active');
         const hidden = this._videoBox.querySelector('.hidden');
+        active.dataset.dt = '';
+        hidden.dataset.dt = '';
 
-        hidden.src = this._liveUrl;
-        this._isSrcSet = true;
+        this._setLiveMode();
+        this._fetch(this._liveUrl);
 
-        active.onloadedmetadata = this._onLoadedData;
-        hidden.onloadedmetadata = this._onLoadedData;
         active.ontimeupdate = this._onTimeUpdate;
         hidden.ontimeupdate = this._onTimeUpdate;
         active.onended = this._onEnded;
         hidden.onended = this._onEnded;
 
-        window.frameCount = document.querySelectorAll('.video-box').length;
-
-        this._setLiveMode();
+        if (!window.frameLoading) {
+            window.frameLoading = {}
+        }
+        window.frameLoading[this._id] = 1
     }
 
     seek = (step) => {
-        this._setNextSrc(this._nextUrl.replace('{step}', step).replace('{dt}', this._active_date_time));
+        this._fetchNext(this._nextUrl, { step: step });
     }
 
     onRangeChange = (val) => {
-        this._setNextSrc(this._rangeUrl.replace('{range}', val));
+        this._lock = false;
+        this._videoBox.querySelector('.active').dataset.dt = '';
+        this._fetchNext(this._rangeUrl, { range: val });
     }
 
     onRangeInput = (e) => {
         this._lock = true;
-        if (this._isSrcSet) {
+        const hidden = this._videoBox.querySelector('.hidden');
+
+        if (hidden.dataset.ready == 1) {  // this._isSrcSet
             return
         }
-        this._videoBox.querySelector('.hidden').src = this._getSrc(this._rangeUrl.replace('{range}', e.target.value));
-        this._isSrcSet = true;
         this._playMode = 'arch';
         this._playThreshold = 0.5;
+        this._fetchNext(this._rangeUrl, { range: e.target.value });
     }
 
-    _onLoadedData = (e) => {
-        if (!e.target.classList.contains('hidden')) {
+    _onTimeUpdate = (e) => {
+        const active = e.target;
+        const hidden = this._videoBox.querySelector('.hidden');
+
+        if (hidden.dataset.ready || !active.src || active.buffered.length < 1 || !active.classList.contains('active')) {
             return;
         }
-        this._playNext();
-        if (window.frameCount > 1) {
-            window.frameCount--;
-        } else {
-            this.loader.classList.add('hidden');
-        }
-        if (!this._lock && this._playMode == 'arch') {
-            const range = this.getCookie('rng');
-            if (range == '' || range == undefined) {
-                this._setLiveMode();
+        if (active.currentTime / active.buffered.end(0) > this._playThreshold) {
+            if (this._playMode == 'live') {
+                this._fetch(this._liveUrl);
             } else {
-                this.inputRange.value = range;
+                this._fetch(this._nextUrl, { step: 1 });
             }
         }
     }
 
     _onEnded = () => {
+        this._videoBox.querySelector('.active').dataset.ready = '';
         this._playNext();
-    }
-
-    _onTimeUpdate = (e) => {
-        const active = e.target;
-        if (this._isSrcSet || !active.classList.contains('active')) {
-            return;
-        }
-        if (active.currentTime / active.buffered.end(0) > this._playThreshold) {
-            this._isSrcSet = true;
-            const hidden = this._videoBox.querySelector('.hidden');
-
-            if (this._playMode == 'arch') {
-                hidden.src = this._getSrc(this._nextUrl.replace('{step}', 1).replace('{dt}', this._active_date_time));
-            } else {
-                hidden.src = this._liveUrl;
-            }
-            this._isSrcSet = true;
-        }
     }
 
     _playNext = () => {
         const active = this._videoBox.querySelector('.active');
         const hidden = this._videoBox.querySelector('.hidden');
 
-        if (!this._lock && (!active.paused || hidden.readyState < 1)) {
-            return;  // paused == ended || paused
+        if (active.dataset.ready || hidden.dataset.ready < '2') {
+            return;
         }
         active.classList.remove('active');
         hidden.classList.add('active');
         hidden.classList.remove('hidden');
         active.classList.add('hidden');
+
+        active.dataset.ready = '';
 
         if (!this._lock) {
             hidden.play().catch(e => {
@@ -107,9 +91,6 @@ class Player extends Base {
                 this.showPlayBtn();
             });
         }
-        this._isSrcSet = false;
-        this._active_date_time = this.getCookie('dt')
-
         if (this.btnSpeed && this.btnSpeed.classList.contains('selected')) {
             hidden.playbackRate = this.MAX_PLAYBACK_RATE;
         }
@@ -128,23 +109,78 @@ class Player extends Base {
         }
     }
 
-    _setNextSrc = (src) => {
+    _getSrc = (url, args = {}) => {
+        Object.entries(args).forEach(([key, val]) => {
+            url = url.replace('{' + key + '}', val);
+        });
+        url = url.replace('{dt}', this._videoBox.querySelector('.active').dataset.dt);
+        if (this.btnMotion && this.btnMotion.classList.contains('selected')) {
+            url += '&md=' + this.MD_SENS;
+        }
+        return url;
+    }
+
+    _fetchNext = (url, args) => {
         this._videoBox.querySelector('.active').pause();
-        const hidden = this._videoBox.querySelector('.hidden')
-        hidden.src = this._getSrc(src);
-        this._isSrcSet = true;
+        const hidden = this._videoBox.querySelector('.hidden');
+        const active = this._videoBox.querySelector('.active');
+
+        this._playMode = 'arch';
+        this._playThreshold = 0.5;
+
+        active.pause();
+        active.dataset.ready = '';
+
+        this._fetch(url, args);
+
         for (const i of this.footer.querySelectorAll('.arch')) {
             i.classList.remove('disabled');
         }
-        this._playMode = 'arch';
-        this._playThreshold = 0.5;
-        this._lock = false;
     }
 
-    _getSrc = (src) => {
-        if (this.btnMotion.classList.contains('selected')) {
-            return src + '&md=' + this.MD_SENS;
-        }
-        return src;
+    _fetch = (url, args = {}) => {
+        this._videoBox.querySelector('.hidden').dataset.ready = 1;
+        clearTimeout(this._timerId);
+
+        let datetime, rng;
+        fetch(this._getSrc(url, args))
+            .then(r => {
+                datetime = r.headers.get('x-datetime');
+                rng = r.headers.get('x-range');
+                return r.blob();
+            })
+            .then(data => {
+                if (!data.size && !this._lock) {
+                    window.frameLoading[this._id] = 1;
+                    this.loader.classList.remove('hidden');
+                    this._timerId = setTimeout(() => {
+                        this._fetch(url, args);
+                    }, 1000);
+                    return;
+                }
+                const hidden = this._videoBox.querySelector('.hidden');
+                if (!data.size) {
+                    hidden.dataset.ready = '';
+                    return;
+                }
+                delete window.frameLoading[this._id];
+                if (!Object.keys(window.frameLoading).length) {
+                    this.loader.classList.add('hidden');
+                }
+                hidden.src = window.URL.createObjectURL(data);
+                hidden.dataset.dt = datetime;
+
+                if (!rng && this._playMode != 'live') {
+                    this._setLiveMode();
+                }
+                if (rng && !this._lock) {
+                    this.inputRange.value = rng;
+                }
+                hidden.dataset.ready = 2;
+                this._playNext();
+            })
+            .catch(e => {
+                console.error('Fetch error:', e)
+            });
     }
 }
