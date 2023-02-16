@@ -153,6 +153,9 @@ class Player extends Base {
                 if (!data.size && !this._lock) {
                     window.frameLoading[this._id] = 1;
                     this.loader.classList.remove('hidden');
+                    if (this.btnPause && this.btnPause.classList.contains('hidden')) {
+                        return;
+                    }
                     this._timerId = setTimeout(() => {
                         this._fetch(url, args);
                     }, 1000);
