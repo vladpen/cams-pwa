@@ -12,6 +12,7 @@ class Files:
     DT_FULL_FORMAT = '%Y%m%d%H%M%S'
     DEPTH = 3
     MIN_FILE_SIZE = 1000
+    MD_AVERAGE_LEN = 10
 
     def __init__(self, cam_hash: str, query: Dict[str, List[str]]):
         self._hash = cam_hash
@@ -148,42 +149,54 @@ class Files:
             folder = (
                 datetime.strptime(date_time, self.DT_FULL_FORMAT) + timedelta(seconds=abs(step)) * sign
             ).strftime(self.DT_FORMAT)
-            file_name = '00.mp4'
+            file_name = ''
         else:
             path = self._get_path_by_datetime(date_time)
             file_name = path.split('/')[-1]
             folder = '/'.join(path.split('/')[0:-1])
 
-        return self._motion_detector(folder, file_name, 0, sensitivity)
+        last_sizes = []
+        prev_folder = (datetime.strptime(folder, self.DT_FORMAT) - timedelta(minutes=1)).strftime(self.DT_FORMAT)
+        files = self._get_files(prev_folder)
+        if files:
+            for file in files:
+                f = file.split(' ')
+                last_sizes.insert(0, int(f[0]))
+        return self._motion_detector(folder, file_name, last_sizes, sensitivity)
 
-    def _motion_detector(self, folder: str, file_name: str, current_size: int, sensitivity: int) -> Tuple[str, int]:
+    def _motion_detector(self, folder: str, file_name: str, last_sizes: List[int], sensitivity: int) -> Tuple[str, int]:
         files = self._get_files(folder)
         if not files:
             file = self._find_nearest_file(folder, '', 1)
             if file:
                 path = '/'.join(file[0][len(self._cam_path) + 1:].split('/')[0:-1])
                 if path > folder:
-                    return self._motion_detector(path, '', current_size, sensitivity)
+                    return self._motion_detector(path, '', last_sizes, sensitivity)
 
                 return self.get_live()
 
         sens = 1 + sensitivity / 100
         for file in files:
             f = file.split(' ')
-            if not current_size and file_name and file_name <= f[1]:
-                current_size = int(f[0])
-            elif current_size and float(f[0]) > current_size * sens and int(f[0]) > self.MIN_FILE_SIZE:
+            if file_name and file_name == f[1]:
+                continue
+            average_size = sum(last_sizes) / len(last_sizes) if last_sizes else 0
+
+            last_sizes.insert(0, int(f[0]))
+            del last_sizes[self.MD_AVERAGE_LEN:]
+
+            if file_name and file_name <= f[1]:
+                continue
+            if average_size and float(f[0]) > average_size * sens and float(f[0]) > self.MIN_FILE_SIZE:
                 path = f'{self._cam_path}/{folder}/{f[1]}'
                 return path, int(f[0])
-            elif current_size:
-                current_size = int(f[0])
 
         if folder >= datetime.now().strftime(self.DT_FORMAT):
             return self.get_live()
 
         folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1)).strftime(self.DT_FORMAT)
 
-        return self._motion_detector(folder, '', current_size, sensitivity)
+        return self._motion_detector(folder, '', last_sizes, sensitivity)
 
     def _get_folders(self, folder: str = '') -> List[str]:
         cmd = f'ls {self._cam_path}/{folder}'
@@ -199,7 +212,7 @@ class Files:
 
     def _get_file(self, folder: str, position: int = 0) -> Tuple[str, int]:
         files = self._get_files(folder)
-        if not files or len(files) < abs(position):
+        if not files or len(files) <= position or len(files) < abs(position):
             return '', 0
         file = files[position].split()  # [size, file]
         path = f'{self._cam_path}/{folder}/{file[1]}'
