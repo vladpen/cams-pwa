@@ -118,6 +118,8 @@ class Handler(BaseHTTPRequestHandler):
                 mime_type, _enc = mimetypes.MimeTypes().guess_type(template)
                 self.send_response(200)
                 self.send_header('Content-Type', mime_type)
+                self.send_header(
+                    'Set-Cookie', f'auth={self.auth.encrypt(self.auth.info())}; Secure; Path=/; Max-Age=3456000')
                 self.end_headers()
                 self.wfile.write(self._replace_template(template, file.read()))
         except Exception as e:
