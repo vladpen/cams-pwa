@@ -1,7 +1,7 @@
 class Base {
     ASPECT_RATIO = 16 / 9;
     MAX_PLAYBACK_RATE = 5.0;
-    MD_SENS = 50;
+    MD_SENS = 30;
 
     header = document.querySelector('header');
     footer = document.querySelector('footer');

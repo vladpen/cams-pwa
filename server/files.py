@@ -185,7 +185,7 @@ class Files:
             last_sizes.insert(0, int(f[0]))
             del last_sizes[self.MD_AVERAGE_LEN:]
 
-            if file_name and file_name <= f[1]:
+            if file_name and file_name >= f[1]:
                 continue
             if average_size and float(f[0]) > average_size * sens and float(f[0]) > self.MIN_FILE_SIZE:
                 path = f'{self._cam_path}/{folder}/{f[1]}'
