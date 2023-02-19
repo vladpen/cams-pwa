@@ -109,8 +109,8 @@ class Files:
         parts = parent.split('/') if parent else []
 
         if (folder and len(parts) == self.DEPTH - 1) or (not folder and len(parts) == self.DEPTH):
-            path = f'{parent}/{folder}' if folder else parent
-            position = -1 if step < 0 else 1
+            path = f'{parent}/{folder}'.rstrip('/')
+            position = -1 if step < 0 else 0
             file, size = self._get_file(path, position)
             if size:
                 return file, size
@@ -139,7 +139,7 @@ class Files:
             parts.append(folders[-1]) if step < 0 else parts.append(folders[0])
             return self._find_nearest_file('/'.join(parts), '', step)  # shift right
 
-        Log.print(f'find_nearest_file: folder not found: {parent}/{folder}, step={step}')
+        Log.print(f'find_nearest_file: file not found: {parent}[/{folder}], step={step}')
 
         return '', 0
 
@@ -162,7 +162,7 @@ class Files:
             for file in files:
                 f = file.split(' ')
                 last_sizes.insert(0, int(f[0]))
-        return self._motion_detector(folder, file_name, last_sizes, sensitivity)
+        return self._motion_detector(folder, file_name, last_sizes, 100 - max(0, min(90, sensitivity)))
 
     def _motion_detector(self, folder: str, file_name: str, last_sizes: List[int], sensitivity: int) -> Tuple[str, int]:
         files = self._get_files(folder)

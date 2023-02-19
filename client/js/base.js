@@ -1,7 +1,6 @@
 class Base {
     ASPECT_RATIO = 16 / 9;
-    MAX_PLAYBACK_RATE = 5.0;
-    MD_SENS = 30;
+    MAX_SPEED_MOBILE = 5;
 
     header = document.querySelector('header');
     footer = document.querySelector('footer');
@@ -9,7 +8,9 @@ class Base {
     btnPause = this.footer.querySelector('.pause');
     btnMotion = this.footer.querySelector('.motion');
     btnSpeed = this.footer.querySelector('.speed');
-    inputRange = this.footer.querySelector('.range');
+    speedRange = this.footer.querySelector('.speed-range');
+    motionRange = this.footer.querySelector('.motion-range');
+    timeRange = this.footer.querySelector('.time-range');
     loader = document.querySelector('.loader');
 
     resizeBars = () => {
@@ -29,6 +30,11 @@ class Base {
         this.footer.style.transform = 'scale(' + 1 / scale + ')';
 
         this.fadeBars();
+
+        if (this.timeRange) {
+            this.speedRange.classList.add('hidden');
+            this.motionRange.classList.add('hidden');
+        }
     }
 
     hideBars = () => {

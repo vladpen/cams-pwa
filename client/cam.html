@@ -26,6 +26,8 @@
             </svg>
         </span>
         <span class="arch disabled">
+            <input type="range" class="arch-range speed-range hidden" value="5" min="2" max="10" step="1" orient="vertical">
+            <input type="range" class="arch-range motion-range hidden" value="50" min="0" max="90" step="10" orient="vertical">
             <svg class="speed big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <polyline points="10,2 6,11 14,9 10,18" fill="none" stroke-width="4" />
             </svg>
@@ -40,7 +42,7 @@
         </span>
     </section>
     <section class="range-box">
-        <input type="range" class="range" value="2000" min="0" max="2000" />
+        <input type="range" class="time-range" value="2000" min="0" max="2000">
     </section>
 </footer>
 <script src="/js/base.js"></script>

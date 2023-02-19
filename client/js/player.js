@@ -92,19 +92,21 @@ class Player extends Base {
             });
         }
         if (this.btnSpeed && this.btnSpeed.classList.contains('selected')) {
-            hidden.playbackRate = this.MAX_PLAYBACK_RATE;
+            hidden.playbackRate = this.speedRange.value;
         }
     }
 
     _setLiveMode = () => {
         this._playMode = 'live'
         this._playThreshold = 0.8;
-        if (this.inputRange) {
-            this.inputRange.value = this.inputRange.max;
+        if (this.timeRange) {
+            this.timeRange.value = this.timeRange.max;
             this.btnSpeed.classList.remove('selected');
             this.btnMotion.classList.remove('selected');
-            for (const i of this.footer.querySelectorAll('.arch')) {
-                i.classList.add('disabled');
+            this.speedRange.classList.add('hidden');
+            this.motionRange.classList.add('hidden');
+            for (const e of this.footer.querySelectorAll('.arch')) {
+                e.classList.add('disabled');
             }
         }
     }
@@ -115,7 +117,7 @@ class Player extends Base {
         });
         url = url.replace('{dt}', this._videoBox.querySelector('.active').dataset.dt);
         if (this.btnMotion && this.btnMotion.classList.contains('selected')) {
-            url += '&md=' + this.MD_SENS;
+            url += '&md=' + this.motionRange.value;
         }
         return url;
     }
@@ -133,8 +135,8 @@ class Player extends Base {
 
         this._fetch(url, args);
 
-        for (const i of this.footer.querySelectorAll('.arch')) {
-            i.classList.remove('disabled');
+        for (const e of this.footer.querySelectorAll('.arch')) {
+            e.classList.remove('disabled');
         }
     }
 
@@ -177,7 +179,7 @@ class Player extends Base {
                     this._setLiveMode();
                 }
                 if (rng && !this._lock) {
-                    this.inputRange.value = rng;
+                    this.timeRange.value = rng;
                 }
                 hidden.dataset.ready = 2;
                 this._playNext();
