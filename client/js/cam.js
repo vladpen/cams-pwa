@@ -2,7 +2,8 @@ class Cam extends Base {
     run = (id, days) => {
         this._videoBox = document.getElementById(id);
 
-        const urlParams = new URLSearchParams(window.location.search);
+        const urlParams = new URLSearchParams(window.location.search),
+            hash = urlParams.get('hash');
 
         this.header.querySelector('.back').onclick = () => {
             const group = urlParams.get('grp')
@@ -23,7 +24,7 @@ class Cam extends Base {
         this._onResize();
 
         this._player = new Player()
-        this._player.start(id, urlParams.get('hash'));
+        this._player.start(id, hash);
 
         this.showPauseBtn();
         this.btnPlay.onclick = this._togglePlay;
@@ -51,6 +52,13 @@ class Cam extends Base {
         this.footer.querySelector('.range-box').style.backgroundSize = 100 / days + "% 50px";
         this.btnMotion.onclick = this._toggleMotion;
         this.btnSpeed.onclick = this._toggleSpeed;
+
+        if (localStorage.getItem('speed_' + hash)) {
+            this.speedRange.value = localStorage.getItem('speed_' + hash);
+        }
+        if (localStorage.getItem('motion_' + hash)) {
+            this.motionRange.value = localStorage.getItem('motion_' + hash);
+        }
     }
 
     _onRangeChange = () => {
@@ -94,11 +102,11 @@ class Cam extends Base {
         }
         if (this.btnSpeed.classList.contains('selected')) {
             this.btnSpeed.classList.remove('selected');
-            this._videoBox.querySelector('.active').playbackRate = 1.0;
+            this._videoBox.querySelector('.active').playbackRate = 1;
             this.speedRange.classList.add('hidden');
         } else {
             this.btnSpeed.classList.add('selected');
-            this._videoBox.querySelector('.active').playbackRate = this.footer.querySelector('.speed-range').value;
+            this._videoBox.querySelector('.active').playbackRate = this.speedRange.value;
             this.speedRange.classList.remove('hidden');
         }
     }
