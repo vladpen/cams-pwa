@@ -19,9 +19,10 @@ class Files:
         self._query = query
         self._cam_path = f'{Config.storage_path}/{Config.cameras[cam_hash]["path"]}'
         self._play_mode = 'live'
+        self._root_folder = []
 
     def get_days(self):
-        return round((datetime.now() - self._get_start_date_time()).total_seconds() / 86400)
+        return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
 
     def get_live(self) -> Tuple[str, int]:
         self._play_mode = 'live'
@@ -38,7 +39,7 @@ class Files:
         rng = int(self._query['range'][0])
         rng = min(max(rng, 0), self.MAX_RANGE)
 
-        start_date = self._get_start_date_time()
+        start_date = self._get_start_date()
         time_range = datetime.now() - start_date
         delta_minutes = int(time_range.total_seconds() * rng / self.MAX_RANGE / 60)
         wd = (start_date + timedelta(minutes=delta_minutes)).strftime(self.DT_FORMAT)
@@ -94,14 +95,14 @@ class Files:
     def get_range_by_path(self, path: str) -> str:
         if self._play_mode == 'live':
             return ''
-        start_date_time = self._get_start_date_time()
+        start_date = self._get_start_date()
         delta_seconds = (
-            datetime.strptime(self.get_datetime_by_path(path), self.DT_FULL_FORMAT) - start_date_time
+            datetime.strptime(self.get_datetime_by_path(path), self.DT_FULL_FORMAT) - start_date
         ).total_seconds()
-        total_seconds = (datetime.now() - start_date_time).total_seconds()
+        total_seconds = (datetime.now() - start_date).total_seconds()
         return str(round(self.MAX_RANGE * delta_seconds / total_seconds))
 
-    def _get_start_date_time(self) -> datetime:
+    def _get_start_date(self) -> datetime:
         return datetime.strptime(self._get_folders()[0], '%Y%m%d')
 
     def _find_nearest_file(self, parent: str, folder: str, step: int) -> Tuple[str, int]:
@@ -139,13 +140,13 @@ class Files:
             parts.append(folders[-1]) if step < 0 else parts.append(folders[0])
             return self._find_nearest_file('/'.join(parts), '', step)  # shift right
 
-        Log.print(f'find_nearest_file: file not found: {parent}[/{folder}], step={step}')
+        Log.print(f'find_nearest_file: not found: {parent}[/{folder}], step={step}')
 
         return '', 0
 
     def _get_next_motion_by_date_time(self, date_time: str, sensitivity: int, step: int) -> Tuple[str, int]:
+        sign = 1 if step > 0 else -1
         if step >= 60 or step <= -60:
-            sign = 1 if step > 0 else -1
             folder = (
                 datetime.strptime(date_time, self.DT_FULL_FORMAT) + timedelta(seconds=abs(step)) * sign
             ).strftime(self.DT_FORMAT)
@@ -156,26 +157,36 @@ class Files:
             folder = '/'.join(path.split('/')[0:-1])
 
         last_sizes = []
-        prev_folder = (datetime.strptime(folder, self.DT_FORMAT) - timedelta(minutes=1)).strftime(self.DT_FORMAT)
+        prev_folder = (datetime.strptime(folder, self.DT_FORMAT) - timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
         files = self._get_files(prev_folder)
         if files:
             for file in files:
                 f = file.split(' ')
                 last_sizes.insert(0, int(f[0]))
-        return self._motion_detector(folder, file_name, last_sizes, 100 - max(0, min(90, sensitivity)))
+        return self._motion_detector(folder, file_name, last_sizes, 100 - max(0, min(90, sensitivity)), sign)
 
-    def _motion_detector(self, folder: str, file_name: str, last_sizes: List[int], sensitivity: int) -> Tuple[str, int]:
+    def _motion_detector(
+            self,
+            folder: str,
+            file_name: str,
+            last_sizes: List[int],
+            sensitivity: int,
+            sign: int) -> Tuple[str, int]:
         files = self._get_files(folder)
         if not files:
-            file = self._find_nearest_file(folder, '', 1)
+            if sign > 0 and folder >= self._get_folders()[-1]:
+                return self.get_live()
+            if sign < 0 and folder <= self._get_folders()[0]:
+                return '', 0
+
+            file = self._find_nearest_file(folder, '', sign)
             if file:
                 path = '/'.join(file[0][len(self._cam_path) + 1:].split('/')[0:-1])
-                if path > folder:
-                    return self._motion_detector(path, '', last_sizes, sensitivity)
-
-                return self.get_live()
+                return self._motion_detector(path, '', last_sizes, sensitivity, sign)
 
         sens = 1 + sensitivity / 100
+        if sign < 0:
+            files.reverse()
         for file in files:
             f = file.split(' ')
             if file_name and file_name == f[1]:
@@ -185,7 +196,7 @@ class Files:
             last_sizes.insert(0, int(f[0]))
             del last_sizes[self.MD_AVERAGE_LEN:]
 
-            if file_name and file_name >= f[1]:
+            if file_name and ((sign > 0 and file_name >= f[1]) or (sign < 0 and file_name <= f[1])):
                 continue
             if average_size and float(f[0]) > average_size * sens and float(f[0]) > self.MIN_FILE_SIZE:
                 path = f'{self._cam_path}/{folder}/{f[1]}'
@@ -194,13 +205,18 @@ class Files:
         if folder >= datetime.now().strftime(self.DT_FORMAT):
             return self.get_live()
 
-        folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1)).strftime(self.DT_FORMAT)
+        folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
 
-        return self._motion_detector(folder, '', last_sizes, sensitivity)
+        return self._motion_detector(folder, '', last_sizes, sensitivity, sign)
 
     def _get_folders(self, folder: str = '') -> List[str]:
+        if not folder and self._root_folder:
+            return self._root_folder
         cmd = f'ls {self._cam_path}/{folder}'
-        return self._exec(cmd).splitlines()  # todo: cache root folder
+        res = self._exec(cmd).splitlines()
+        if not folder:
+            self._root_folder = res
+        return res
 
     def _get_files(self, folder: str) -> List[str]:
         wd = f"{self._cam_path}/{folder}"
