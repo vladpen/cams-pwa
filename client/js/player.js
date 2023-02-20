@@ -4,7 +4,6 @@ class Player extends Base {
 
     start = (id, hash) => {
         this._id = id;
-        this._hash = hash;
         this._videoBox = document.getElementById(id);
         this._liveUrl = '/?live=1&dt={dt}&hash=' + hash;
         this._rangeUrl = '/?range={range}&dt={dt}&hash=' + hash;
@@ -79,6 +78,9 @@ class Player extends Base {
         if (active.dataset.ready || hidden.dataset.ready < '2') {
             return;
         }
+        if (this.btnPause && this.btnPause.classList.contains('hidden')) {
+            return;
+        }
         active.classList.remove('active');
         hidden.classList.add('active');
         hidden.classList.remove('hidden');
@@ -94,7 +96,6 @@ class Player extends Base {
         }
         if (this.btnSpeed && this.btnSpeed.classList.contains('selected')) {
             hidden.playbackRate = this.speedRange.value;
-            localStorage.setItem('speed_' + this._hash, this.speedRange.value);
         }
     }
 
@@ -120,7 +121,6 @@ class Player extends Base {
         url = url.replace('{dt}', this._videoBox.querySelector('.active').dataset.dt);
         if (this.btnMotion && this.btnMotion.classList.contains('selected')) {
             url += '&md=' + this.motionRange.value;
-            localStorage.setItem('motion_' + this._hash, this.motionRange.value);
         }
         return url;
     }

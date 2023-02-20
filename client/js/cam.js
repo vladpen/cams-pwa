@@ -26,7 +26,6 @@ class Cam extends Base {
         this._player = new Player()
         this._player.start(id, hash);
 
-        this.showPauseBtn();
         this.btnPlay.onclick = this._togglePlay;
         this.btnPause.onclick = this._togglePlay;
 
@@ -53,6 +52,12 @@ class Cam extends Base {
         this.btnMotion.onclick = this._toggleMotion;
         this.btnSpeed.onclick = this._toggleSpeed;
 
+        this.speedRange.onchange = () => {
+            localStorage.setItem('speed_' + hash, this.speedRange.value);
+        };
+        this.motionRange.onchange = () => {
+            localStorage.setItem('motion_' + hash, this.motionRange.value);
+        };
         if (localStorage.getItem('speed_' + hash)) {
             this.speedRange.value = localStorage.getItem('speed_' + hash);
         }
