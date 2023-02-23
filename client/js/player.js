@@ -148,7 +148,7 @@ class Player extends Base {
         clearTimeout(this._timerId);
 
         let datetime, rng;
-        fetch(this._getSrc(url, args))
+        fetch(this._getSrc(url, args), {cache: 'no-store'})
             .then(r => {
                 datetime = r.headers.get('x-datetime');
                 rng = r.headers.get('x-range');
@@ -178,10 +178,10 @@ class Player extends Base {
                 hidden.src = window.URL.createObjectURL(data);
                 hidden.dataset.dt = datetime;
 
-                if (!rng && this._playMode != 'live') {
+                if (this._playMode != 'live' && rng > this.MAX_RANGE) {
                     this._setLiveMode();
                 }
-                if (rng && !this._lock) {
+                if (this.timeRange && !this._lock) {
                     this.timeRange.value = rng;
                 }
                 hidden.dataset.ready = 2;

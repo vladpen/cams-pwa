@@ -18,14 +18,14 @@ class Files:
         self._hash = cam_hash
         self._query = query
         self._cam_path = f'{Config.storage_path}/{Config.cameras[cam_hash]["path"]}'
-        self._play_mode = 'live'
+        self._range = self.MAX_RANGE
         self._root_folder = []
 
     def get_days(self):
         return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
 
     def get_live(self) -> Tuple[str, int]:
-        self._play_mode = 'live'
+        self._range = self.MAX_RANGE + 1
 
         path, size = self._get_live_file()  # checks now and last minute folder
         if size:
@@ -35,7 +35,6 @@ class Files:
         return self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
 
     def get_by_range(self) -> Tuple[str, int]:
-        self._play_mode = 'arch'
         rng = int(self._query['range'][0])
         rng = min(max(rng, 0), self.MAX_RANGE)
 
@@ -48,7 +47,9 @@ class Files:
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], -1)
 
     def get_next(self) -> Tuple[str, int]:
-        self._play_mode = 'arch'
+        if 'dt' not in self._query:
+            return self.get_live()
+
         date_time = self._query['dt'][0]
         raw_step = int(self._query['next'][0])
 
@@ -93,8 +94,8 @@ class Files:
         return ''.join(parts[0:-1]) + parts[-1].replace('.mp4', '')
 
     def get_range_by_path(self, path: str) -> str:
-        if self._play_mode == 'live':
-            return ''
+        if self._range > self.MAX_RANGE:
+            return self._range
         start_date = self._get_start_date()
         delta_seconds = (
             datetime.strptime(self.get_datetime_by_path(path), self.DT_FULL_FORMAT) - start_date
@@ -181,8 +182,10 @@ class Files:
 
             file = self._find_nearest_file(folder, '', sign)
             if file:
-                path = '/'.join(file[0][len(self._cam_path) + 1:].split('/')[0:-1])
-                return self._motion_detector(path, '', last_sizes, sensitivity, sign)
+                next_folder = '/'.join(file[0][len(self._cam_path) + 1:].split('/')[0:-1])
+                if (sign > 0 and next_folder <= folder) or (sign < 0 and next_folder >= folder):
+                    return '', 0
+                return self._motion_detector(next_folder, '', last_sizes, sensitivity, sign)
 
         sens = 1 + sensitivity / 100
         if sign < 0:

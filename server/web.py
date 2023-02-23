@@ -178,9 +178,7 @@ class Handler(BaseHTTPRequestHandler):
         if file_path and file_size and query_date_time != file_date_time:
             self.send_header('Content-Type', 'video/mp4')
             self.send_header('Content-Length', str(file_size))
-            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
-            self.send_header('Pragma', 'no-cache')
-            self.send_header('Expires', '0')
+            self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Datetime', file_date_time)
             self.send_header('X-Range', self.files.get_range_by_path(file_path))
             self.end_headers()

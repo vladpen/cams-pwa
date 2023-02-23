@@ -1,6 +1,7 @@
 class Base {
     ASPECT_RATIO = 16 / 9;
     MAX_SPEED_MOBILE = 5;
+    MAX_RANGE = 2000;
 
     header = document.querySelector('header');
     footer = document.querySelector('footer');
