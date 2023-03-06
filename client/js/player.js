@@ -28,7 +28,7 @@ class Player extends Base {
         window.frameLoading[this._id] = 1
     }
 
-    seek = (step) => {
+    seek = step => {
         this._fetchNext(this._nextUrl, { step: step });
     }
 

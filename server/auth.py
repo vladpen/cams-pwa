@@ -4,6 +4,7 @@ import subprocess
 from urllib.parse import quote_plus, unquote_plus
 from typing import Optional
 from _config import Config
+from log import Log
 
 
 class Auth:
@@ -38,7 +39,10 @@ class Auth:
             f'echo "{decrypted.strip()}" | '
             f'openssl enc -e -base64 -aes-256-cbc -k "{Config.encryption_key}" -pbkdf2')
         p = subprocess.run(cmd, shell=True, capture_output=True)
-        return quote_plus(p.stdout.decode())
+        res = p.stdout.decode()
+        if not res:
+            Log.print('Auth encryption ERROR: the OPENSSL may not be installed')
+        return quote_plus(res)
 
     @staticmethod
     def decrypt(encrypted: str) -> Optional[str]:

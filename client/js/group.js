@@ -1,5 +1,5 @@
 class Group extends Base {
-    run = (cams) => {
+    run = cams => {
         const box = document.querySelector('.group-box');
         for (let i = 0; i < cams.length; i++) { //  const hash of cams
             const hash = cams[i];
