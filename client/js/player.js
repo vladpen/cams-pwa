@@ -102,6 +102,7 @@ class Player extends Base {
     _setLiveMode = () => {
         this._playMode = 'live'
         this._playThreshold = 0.8;
+        document.body.classList.remove('arch');
         if (this.timeRange) {
             this.timeRange.value = this.timeRange.max;
             this.btnSpeed.classList.remove('selected');

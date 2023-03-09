@@ -1,5 +1,9 @@
 <main><ul class="nav"></ul></main>
 <script>
+    const cams = {cams}
+    if (Object.keys(cams).length == 1) {
+        document.location.href = `/?page=cam&hash=${Object.keys(cams)[0]}`;
+    }
     const appendRow = (key, val, kind) => {
         let li = document.createElement('li');
         let a = document.createElement('a');
@@ -9,7 +13,7 @@
         li.append(a);
         document.querySelector('ul').append(li);
     }
-    for (const [key, val] of Object.entries({cams})) {
+    for (const [key, val] of Object.entries(cams)) {
         appendRow(key, val, 'cam');
     }
     for (const [key, val] of Object.entries({groups})) {

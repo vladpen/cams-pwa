@@ -2,13 +2,14 @@ html, body {
     width: 100%; height: 100%; margin: 0;
     background-color: #000; font-size: 1.2em; font-family: sans-serif; color: #fff;
 }
+body.arch {background-color: #030;}
 main { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
 form {text-align: center;}
 form label {display: block;}
 form input {width: 95%;}
 form input, form button {font-size: 1em;}
 form input.error {background: #fd7;}
-.video-box {margin: 0; background: #000; position: relative;}
+.video-box {margin: 0; position: relative;}
 .video-box video {width: 100%; height: 100%; display: block; position: absolute; z-index: 1;}
 .video-box video.hidden {z-index: 2;}
 .video-box video.active {z-index: 3;}
@@ -33,6 +34,7 @@ form input.error {background: #fd7;}
 .bar .arch-range {position: absolute; top: -10em; width: 3px; height: 9.5em; -webkit-appearance: slider-vertical;}
 .bar .speed-range {left: 1.3em;}
 .bar .motion-range {right: 1.3em;}
+/* .bar svg.msg-btn {margin-left: auto; fill: none;} */
 header {display: flex; line-height: 1em;}
 header .back, header .title, footer {background: rgba(0, 0, 0, 0.2);}
 header .title {align-items: center; padding: 0 0.3em 0 0;}

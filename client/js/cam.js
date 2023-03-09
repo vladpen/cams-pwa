@@ -15,7 +15,7 @@ class Cam extends Base {
         }
         document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;
-        document.ontouchmove = (e) => {
+        document.ontouchmove = e => {
             if (e.target.type != 'range') {
                 this.hideBars();
             }
@@ -168,5 +168,6 @@ class Cam extends Base {
         }
         this.header.querySelector('.loader').classList.remove('hidden');
         this.fadeBars();
+        document.body.classList.add('arch');
     }
 }
