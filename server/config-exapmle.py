@@ -4,12 +4,15 @@ class Config:
     #    * "path" is used for the storage.
     #    * "url" must contain at least <protocol>://<host>:<port>
     #    * "name" is just visible camera name, can include emoji
+    #    * "sensitivity" is used as threasold value for the Motion Detector.
+    #    *     Must be more than 1. Set to 0 to disable.
     #
     cameras = {
         'some-URL-compatible-string/including-UTF-characters': {
             'path': 'some folder in the storage_path',
             'url': 'rtsp://<login>:<password>@<host>:554/<uri>',
             'name': 'Any camera name',
+            'sensitivity': 1.5,
         },
     }
 
@@ -43,9 +46,8 @@ class Config:
     ssl_private_key = '/<path>/_localhost.key'
 
     # Check "storage_command" output, secs (int).
-    # Max value is 30, min value must be more than max segment duration.
-    # Default is 30.
-    watchdog_interval = 30
+    # Used as the storage watchdog interval and motion detector interval
+    min_segment_duration = 4
 
     # Run this script with root permissions or set up log rotation yourself
     log_file = '/var/log/cams-pwa.log'

@@ -1,7 +1,7 @@
 import re
 import subprocess
 from datetime import datetime, timedelta
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List, Any
 from _config import Config
 from log import Log
 
@@ -14,9 +14,8 @@ class Files:
     MIN_FILE_SIZE = 1000
     MD_AVERAGE_LEN = 10
 
-    def __init__(self, cam_hash: str, query: Dict[str, List[str]]):
+    def __init__(self, cam_hash: str):
         self._hash = cam_hash
-        self._query = query
         self._cam_path = f'{Config.storage_path}/{Config.cameras[cam_hash]["path"]}'
         self._range = self.MAX_RANGE
         self._root_folder = []
@@ -34,8 +33,7 @@ class Files:
         fallback = (datetime.now() - timedelta(minutes=1)).strftime(self.DT_FORMAT).split('/')
         return self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
 
-    def get_by_range(self) -> Tuple[str, int]:
-        rng = int(self._query['range'][0])
+    def get_by_range(self, rng) -> Tuple[str, int]:
         rng = min(max(rng, 0), self.MAX_RANGE)
 
         start_date = self._get_start_date()
@@ -46,19 +44,16 @@ class Files:
         parts = wd.split('/')
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], -1)
 
-    def get_next(self) -> Tuple[str, int]:
-        if 'dt' not in self._query:
+    def get_next(self, raw_step, date_time, sensitivity) -> Tuple[str, int]:
+        if not date_time:
             return self.get_live()
-
-        date_time = self._query['dt'][0]
-        raw_step = int(self._query['next'][0])
 
         steps = [1, 60, 600, 3600]
         step = steps[abs(raw_step) - 1] if 1 <= abs(raw_step) <= len(steps) else 1
         step = step * -1 if raw_step < 0 else step
 
-        if 'md' in self._query:
-            return self._get_next_motion_by_date_time(date_time, int(self._query['md'][0]), step)
+        if sensitivity >= 0:
+            return self._get_next_motion_by_date_time(date_time, sensitivity, step)
 
         file_path = self._get_path_by_datetime(date_time)
         parts = file_path.split('/')
@@ -192,7 +187,7 @@ class Files:
             files.reverse()
         for file in files:
             f = file.split(' ')
-            if file_name and file_name == f[1]:
+            if float(f[0]) < self.MIN_FILE_SIZE:  # exclude broken files
                 continue
             average_size = sum(last_sizes) / len(last_sizes) if last_sizes else 0
 
@@ -200,8 +195,9 @@ class Files:
             del last_sizes[self.MD_AVERAGE_LEN:]
 
             if file_name and ((sign > 0 and file_name >= f[1]) or (sign < 0 and file_name <= f[1])):
-                continue
-            if average_size and float(f[0]) > average_size * sens and float(f[0]) > self.MIN_FILE_SIZE:
+                continue  # don't detect the files before last motion & last motion itself
+
+            if average_size and float(f[0]) > average_size * sens:
                 path = f'{self._cam_path}/{folder}/{f[1]}'
                 return path, int(f[0])
 
@@ -209,7 +205,6 @@ class Files:
             return self.get_live()
 
         folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
-
         return self._motion_detector(folder, '', last_sizes, sensitivity, sign)
 
     def _get_folders(self, folder: str = '') -> List[str]:

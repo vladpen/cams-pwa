@@ -1,9 +1,14 @@
+<header class="bar index">
+    <svg class="bell-btn" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="m10,21h4c0,3-4,3-4,0z M3,18 5,16 V10 C5,7 8,4 11,3 V2 c0,-1 2,-1 2,0 v1 c3,1 6,3 6,7 v6 l 2,2 c-2,0 -16,0-18,0z"/>
+    </svg>
+</header>
+
 <main><ul class="nav"></ul></main>
+
+<script src="/js/base.js"></script>
+<script src="/js/bell.js"></script>
 <script>
-    const cams = {cams}
-    if (Object.keys(cams).length == 1) {
-        document.location.href = `/?page=cam&hash=${Object.keys(cams)[0]}`;
-    }
     const appendRow = (key, val, kind) => {
         let li = document.createElement('li');
         let a = document.createElement('a');
@@ -13,12 +18,13 @@
         li.append(a);
         document.querySelector('ul').append(li);
     }
-    for (const [key, val] of Object.entries(cams)) {
+    for (const [key, val] of Object.entries({cams})) {
         appendRow(key, val, 'cam');
     }
     for (const [key, val] of Object.entries({groups})) {
         appendRow(key, val, 'group');
     }
+    Bell.run();
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js');
     }

@@ -1,6 +1,7 @@
 import ssl
 import re
 import json
+import time
 import mimetypes
 from os import path as os_path
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -10,6 +11,7 @@ from urllib.parse import urlparse, parse_qs
 from _config import Config
 from auth import Auth
 from files import Files
+from share import Share
 from log import Log
 
 
@@ -39,11 +41,15 @@ class ThreadingServer(ThreadingMixIn, HTTPServer):
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
-        """ Possible GET params: ?<page|live|next|range>=<val>[&dt=<dt>]&hash=<hash>[&md=<val>]
+        """ Possible GET params: ?<page|live|next|range|bell>=<val>[&dt=<dt>]&hash=<hash>[&md=<val>]
         """
         self._init()
 
         self._query = parse_qs(urlparse(self.path).query)
+
+        if 'bell' in self._query:
+            return self._send_bell(self._query['dt'][0])
+
         if not self._query:
             if not re.search(r'^/([a-z]+/)*[a-z\d.]*$', self.path):
                 return self._send_error()
@@ -65,22 +71,23 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_error()
 
         if 'page' in self._query:
-            tpl = self._query["page"][0]
+            tpl = self._query['page'][0]
             if tpl not in ['cam', 'group']:
                 return self._send_error()
             return self._send_template(f'/{tpl}.html')
 
-        self.files = Files(self.hash, self._query)
+        self.files = Files(self.hash)
         self.cam_path = Config.cameras[self.hash]['path']
 
         if 'live' in self._query:
             return self._send_video(*self.files.get_live())
         elif 'range' in self._query:
-            return self._send_video(*self.files.get_by_range())
+            return self._send_video(*self.files.get_by_range(int(self._query['range'][0])))
         elif 'next' in self._query:
-            # if 'dt' not in query:
-            #    return self._send_video(*self.files.get_live(query))
-            return self._send_video(*self.files.get_next())
+            step = int(self._query['next'][0])
+            date_time = self._query['dt'][0] if 'dt' in self._query else ''
+            sensitivity = int(self._query['md'][0]) if 'md' in self._query else -1
+            return self._send_video(*self.files.get_next(step, date_time, sensitivity))
 
         self._send_error()
 
@@ -150,7 +157,7 @@ class Handler(BaseHTTPRequestHandler):
                 '{groups}'.encode('UTF-8'), json.dumps(groups_list).encode('UTF-8')
             )
         elif template == '/cam.html':
-            self.files = Files(self.hash, self.cookie)
+            self.files = Files(self.hash)
             title = Config.cameras[self.hash]['name']
             content = content.replace(
                 '{days}'.encode('UTF-8'), json.dumps(self.files.get_days()).encode('UTF-8'))
@@ -186,6 +193,39 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(video_file.read())
         else:
             self.end_headers()
+
+    def _send_bell(self, last_date_time) -> None:
+        if not self.auth.info():
+            return self._send_error(403)
+
+        prev_motions = Share.cam_motions.copy()
+        cnt = 0
+        time.sleep(1)
+        while True:
+            res = {}
+            for hash, date_time in Share.cam_motions.items():
+                if self.auth.info() != Config.master_cam_hash and self.auth.info() != hash:
+                    continue
+                if hash in prev_motions and prev_motions[hash] >= date_time:
+                    continue
+                if last_date_time >= date_time:
+                    continue
+                res[hash] = {'dt': date_time, 'name': Config.cameras[hash]["name"]}
+
+            cnt += 1
+            if not res and cnt < 300:
+                time.sleep(1)
+                continue
+
+            try:
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(res).encode('UTF-8'))
+            except Exception as e:
+                Log.print(f'Web bell: send ERROR: {repr(e)}')
+
+            return
 
     def _send_error(self, code: int = 404) -> None:
         self.send_response(code)

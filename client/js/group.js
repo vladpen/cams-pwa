@@ -22,7 +22,7 @@ class Group extends Base {
             const player = new Player();
             player.start(frame.id, hash);
         }
-        window.onclick = this.resizeBars;
+        document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;
         document.ontouchmove = this.hideBars;
 
