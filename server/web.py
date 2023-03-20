@@ -41,40 +41,32 @@ class ThreadingServer(ThreadingMixIn, HTTPServer):
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
-        """ Possible GET params: ?<page|live|next|range|bell>=<val>[&dt=<dt>]&hash=<hash>[&md=<val>]
+        """ Router
+            Possible GET params: ?<page|live|next|range|bell>=<val>[&dt=<dt>]&hash=<hash>[&md=<val>]
         """
         self._init()
+        self._query = parse_qs(urlparse(self.path).query)  # GET params (dict)
 
-        self._query = parse_qs(urlparse(self.path).query)
+        if not self._query and self.path != '/':
+            return self._send_static(self.path)
+
+        if not self._query and self.path == '/':
+            return self._send_page('index')
 
         if 'bell' in self._query:
             return self._send_bell(self._query['dt'][0])
-
-        if not self._query:
-            if not re.search(r'^/([a-z]+/)*[a-z\d.]*$', self.path):
-                return self._send_error()
-
-            template = self.path if self.path != '/' else '/index.html'
-
-            if not self.auth.info() and template.endswith('.html'):
-                return self._send_template('/auth.html')
-
-            return self._send_template(template)
 
         if 'hash' not in self._query:
             return self._send_error()
 
         self.hash = self._query['hash'][0]
-        if not self.auth.info() or (self.auth.info() != Config.master_cam_hash and self.auth.info() != self.hash):
-            return self._send_error(403)
         if self.hash not in Config.cameras and (not hasattr(Config, 'groups') or self.hash not in Config.groups):
-            return self._send_error()
+            return self._send_error()  # Invalid hash
+        if not self.auth.info() or (self.auth.info() != Config.master_cam_hash and self.auth.info() != self.hash):
+            return self._send_error(403)  # Invalid auth
 
         if 'page' in self._query:
-            tpl = self._query['page'][0]
-            if tpl not in ['cam', 'group']:
-                return self._send_error()
-            return self._send_template(f'/{tpl}.html')
+            return self._send_page(self._query['page'][0])
 
         self.files = Files(self.hash)
         self.cam_path = Config.cameras[self.hash]['path']
@@ -89,7 +81,7 @@ class Handler(BaseHTTPRequestHandler):
             sensitivity = int(self._query['md'][0]) if 'md' in self._query else -1
             return self._send_video(*self.files.get_next(step, date_time, sensitivity))
 
-        self._send_error()
+        self._send_error()  # No valid route found
 
     def do_POST(self) -> None:
         self._init()
@@ -98,13 +90,15 @@ class Handler(BaseHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
         auth_info = self.auth.login(post_data)
         if not auth_info:
-            Log.print('Web: ERROR: invalid auth')
+            Log.write('Web: ERROR: invalid auth')
             return self._send_error(403)
 
         self.send_response(200)
-        self.send_header('Set-Cookie', f'auth={self.auth.encrypt(auth_info)}; Secure; Path=/; Max-Age=3456000')
+        self.send_header(
+            'Set-Cookie',
+            f'auth={self.auth.encrypt(auth_info)}; Path=/; Max-Age=3456000; SameSite=Strict; Secure')
         self.end_headers()
-        Log.print('Web: logged in')
+        Log.write(f'Web: logged in: {auth_info}')
 
     def version_string(self) -> str:
         """Overrides parent method."""
@@ -118,25 +112,41 @@ class Handler(BaseHTTPRequestHandler):
 
         self.auth = Auth(self.cookie['auth'].value if 'auth' in self.cookie else None)
 
-    def _send_template(self, template: str) -> None:
-        path = '/layout.html' if template.endswith('.html') else template
+    def _send_static(self, static_file: str) -> None:
+        if not re.search(r'^/([a-z]+/)*[a-z\d\.]+$', static_file):
+            return self._send_error()
         try:
-            with open(f'{os_path.dirname(os_path.realpath(__file__))}/../client{path}', 'rb') as file:
-                mime_type, _enc = mimetypes.MimeTypes().guess_type(template)
+            with open(f'{os_path.dirname(os_path.realpath(__file__))}/../client{static_file}', 'rb') as file:
+                mime_type, _enc = mimetypes.MimeTypes().guess_type(static_file)
                 self.send_response(200)
                 self.send_header('Content-Type', mime_type)
+                self.end_headers()
+                self.wfile.write(file.read())
+        except Exception as e:
+            Log.write(f'Web: ERROR: static file not found: "{static_file}" ({repr(e)})')
+            self._send_error()
+
+    def _send_page(self, page: str) -> None:
+        if page not in ['index', 'cam', 'group']:
+            return self._send_error()
+
+        template = f'/{page}.html'
+        if not self.auth.info():
+            template = '/auth.html'
+        try:
+            with open(f'{os_path.dirname(os_path.realpath(__file__))}/../client/layout.html', 'rb') as file:
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html')
                 self.send_header(
-                    'Set-Cookie', f'auth={self.auth.encrypt(self.auth.info())}; Secure; Path=/; Max-Age=3456000')
+                    'Set-Cookie',
+                    f'auth={self.auth.encrypt(self.auth.info())}; Path=/; Max-Age=3456000; SameSite=Strict; Secure')
                 self.end_headers()
                 self.wfile.write(self._replace_template(template, file.read()))
         except Exception as e:
-            Log.print(f'Web: ERROR: template not found: "{template}" ({repr(e)})')
+            Log.print(f'Web: ERROR: page not found: "{page}" ({repr(e)})')
             self._send_error()
 
     def _replace_template(self, template: str, content: bytes) -> bytes:
-        if not template.endswith('.html'):
-            return content
-
         content = content.replace('{content}'.encode('UTF-8'), self._get_content(template))
         title = Config.title
 
