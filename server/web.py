@@ -84,6 +84,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send_error()  # No valid route found
 
     def do_POST(self) -> None:
+        """ Auth form handler
+        """
         self._init()
 
         content_length = int(self.headers['Content-Length'])
@@ -94,9 +96,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_error(403)
 
         self.send_response(200)
-        self.send_header(
-            'Set-Cookie',
-            f'auth={self.auth.encrypt(auth_info)}; Path=/; Max-Age=3456000; SameSite=Strict; Secure')
+        self.send_header('Set-Cookie', self._create_auth_cookie())
         self.end_headers()
         Log.write(f'Web: logged in: {auth_info}')
 
@@ -137,14 +137,15 @@ class Handler(BaseHTTPRequestHandler):
             with open(f'{os_path.dirname(os_path.realpath(__file__))}/../client/layout.html', 'rb') as file:
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/html')
-                self.send_header(
-                    'Set-Cookie',
-                    f'auth={self.auth.encrypt(self.auth.info())}; Path=/; Max-Age=3456000; SameSite=Strict; Secure')
+                self.send_header('Set-Cookie', self._create_auth_cookie())
                 self.end_headers()
                 self.wfile.write(self._replace_template(template, file.read()))
         except Exception as e:
             Log.print(f'Web: ERROR: page not found: "{page}" ({repr(e)})')
             self._send_error()
+
+    def _create_auth_cookie(self) -> str:
+        return f'auth={self.auth.encrypt(self.auth.info())}; Path=/; Max-Age=3456000; Secure; HttpOnly'
 
     def _replace_template(self, template: str, content: bytes) -> bytes:
         content = content.replace('{content}'.encode('UTF-8'), self._get_content(template))
