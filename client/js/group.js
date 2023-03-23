@@ -43,33 +43,33 @@ class Group extends Base {
 
     _onResize = () => {
         this.hideBars();
-        const frames = document.querySelectorAll('.group-box .video-box');
+        const box = document.querySelector('.group-box');
+        const frames = box.querySelectorAll('.video-box');
+        const width = document.body.clientWidth;
+        const height = document.body.clientHeight;
 
-        let cellQty = 1,
-            width = document.body.clientWidth,
-            height = document.body.clientHeight;
-
-        if (width < height) { // vertical
+        let cellQty = 1;
+        if (width < height) { // vertical screen
             cellQty = Math.max(4, frames.length - 5 / frames.length) / 4; // 1 column for up to 5 cells
         } else {
-            cellQty = frames.length; // horizontal
+            cellQty = frames.length; // horizontal screen
         }
-        let columnCount = Math.ceil(Math.sqrt(cellQty));
-        let rowCount = Math.ceil(frames.length / columnCount);
-        let frameHeight = 0;
-        let rootAspectRatio = width / height;
-        let videoAspectRatio = this.ASPECT_RATIO * columnCount / rowCount;
+        const columnCount = Math.ceil(Math.sqrt(cellQty));
+        const rowCount = Math.ceil(frames.length / columnCount);
+        const rootAspectRatio = width / height;
+        const videoAspectRatio = this.ASPECT_RATIO * columnCount / rowCount;
 
-        if (rootAspectRatio > videoAspectRatio) { // vertical margins
-            frameHeight = height / rowCount;
+        box.style.aspectRatio = videoAspectRatio;
+        if (rootAspectRatio > videoAspectRatio) {
+            box.classList.remove('fit-width');
+            box.classList.add('fit-height');
         } else {
-            frameHeight = width / columnCount / this.ASPECT_RATIO; // horizontal margins
+            box.classList.remove('fit-height');
+            box.classList.add('fit-width');
         }
-        let frameWidth = frameHeight * this.ASPECT_RATIO;
-
+        const w = 100 / columnCount + '%';
         for (const frame of frames) {
-            frame.style.height = frameHeight + 'px';
-            frame.style.width = frameWidth + 'px';
+            frame.style.width = w;
         }
         this.resizeBars();
     }

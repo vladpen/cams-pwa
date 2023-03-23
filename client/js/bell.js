@@ -1,6 +1,6 @@
 class Bell {
     static run = (hash) => {
-        this._audio = new Audio('/bell.oga');
+        this._audio = new Audio('/bell.mp3');
         this._wakeLock = null;
         this._fetchTimerID;
         this._dimmTimerID;
@@ -69,7 +69,7 @@ class Bell {
         if (!this._btnBell.classList.contains('selected')) {
             return;
         }
-        fetch(`/?bell=1&dt=${this._lastDateTime}`, {cache: 'no-store'})
+        fetch(`/?bell=1&dt=${this._lastDateTime}`, { cache: 'no-store' })
             .then(r => {
                 return r.json();
             })
@@ -90,8 +90,6 @@ class Bell {
                 if (!res.length) {
                     return
                 }
-
-                this._audio.volume = 1;
                 this._audio.play();
 
                 this._modal.querySelector('.content').innerHTML = res.join('<br>');

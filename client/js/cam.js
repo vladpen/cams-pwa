@@ -118,15 +118,12 @@ class Cam extends Base {
 
     _onResize = () => {
         this.hideBars();
-        const scale = window.outerWidth / window.visualViewport.width;
-        if (window.innerWidth / window.innerHeight < this.ASPECT_RATIO) { // vertical
-            let width = window.innerWidth * scale;
-            this._videoBox.style.width = width + 'px';
-            this._videoBox.style.height = width / this.ASPECT_RATIO + 'px';
+        if (window.innerWidth / window.innerHeight < this.ASPECT_RATIO) {
+            this._videoBox.classList.add('fit-width');  // top & bottom margins, width = 100%
+            this._videoBox.classList.remove('fit-height');
         } else {
-            let heihgt = window.innerHeight * scale;
-            this._videoBox.style.height = heihgt + 'px';
-            this._videoBox.style.width = heihgt * this.ASPECT_RATIO + 'px';
+            this._videoBox.classList.add('fit-height');  // left & right margins, height = 100%
+            this._videoBox.classList.remove('fit-width');
         }
         this.resizeBars();
     }

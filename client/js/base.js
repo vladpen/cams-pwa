@@ -18,24 +18,22 @@ class Base {
         this.showBars();
 
         const vp = window.visualViewport;
-        const scale = window.outerWidth / vp.width;
-
+        let scale = 1;
+        if (navigator.userAgentData.mobile) {
+            scale = window.outerWidth / vp.width;
+            this.header.style.transform = 'scale(' + 1 / scale + ')';
+            this.footer.style.transform = 'scale(' + 1 / scale + ')';
+        }
         this.header.style.left = vp.pageLeft + 'px';
         this.header.style.top = vp.pageTop + 'px';
-        this.header.style.width = window.outerWidth + 'px';
-        this.header.style.transform = 'scale(' + 1 / scale + ')';
-
         this.footer.style.left = vp.pageLeft + 'px';
         this.footer.style.top = vp.pageTop + vp.height - (this.footer.offsetHeight) / scale + 'px';
-        this.footer.style.width = window.outerWidth + 'px';
-        this.footer.style.transform = 'scale(' + 1 / scale + ')';
-
-        this.fadeBars();
 
         if (this.timeRange) {
             this.speedRange.classList.add('hidden');
             this.motionRange.classList.add('hidden');
         }
+        this.fadeBars();
     }
 
     hideBars = () => {
