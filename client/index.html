@@ -16,6 +16,8 @@
         a.innerHTML = val.name;
         li.classList.add(kind);
         li.append(a);
+        li.append(document.createElement('i'));
+        li.dataset.hash = key;
         document.querySelector('ul').append(li);
     }
     for (const [key, val] of Object.entries({cams})) {

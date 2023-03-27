@@ -13,6 +13,7 @@ class Storage:
         self._hash = camera_hash
         self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["path"]}'
         self._start_time = None
+        self._files = Files(self._hash)
 
     async def run(self) -> None:
         """ Start fragments saving
@@ -20,7 +21,7 @@ class Storage:
         try:
             await self._start_saving()
         except Exception as e:
-            Log.write(f'Storage: ERROR: can\'t start saving "{self._hash}" ({repr(e)})')
+            Log.write(f"Storage: ERROR: can't start saving {self._hash} ({repr(e)})")
 
     async def _start_saving(self, caller: str = '') -> None:
         """ We'll use system (linux) commands for this job
@@ -36,7 +37,7 @@ class Storage:
         self.main_process = await asyncio.create_subprocess_exec(*cmd.split())
         self._start_time = datetime.now()
 
-        Log.write(f'Storage:{caller} start main process {self.main_process.pid} for "{self._hash}"')
+        Log.write(f'Storage:{caller} start main process {self.main_process.pid} for {self._hash}')
 
     async def _mkdir(self, folder: str) -> None:
         """ Create storage folder if not exists
@@ -53,7 +54,7 @@ class Storage:
             try:
                 await self._watchdog()
             except Exception as e:
-                Log.print(f'Storage: watchdog ERROR: can\'t check the storage "{self._hash}" ({repr(e)})')
+                Log.write(f"Storage: watchdog ERROR: can't check the storage {self._hash} ({repr(e)})")
 
     async def _watchdog(self) -> None:
         """ Extremely important piece.
@@ -63,10 +64,8 @@ class Storage:
         if not self._start_time:
             return
 
-        files = Files(self._hash)
-
-        prev_dir = f'{self._cam_path}/{(datetime.now() - timedelta(minutes=1)).strftime(files.DT_FORMAT)}'
-        working_dir = f'{self._cam_path}/{datetime.now().strftime(files.DT_FORMAT)}'
+        prev_dir = f'{self._cam_path}/{(datetime.now() - timedelta(minutes=1)).strftime(self._files.DT_FORMAT)}'
+        working_dir = f'{self._cam_path}/{datetime.now().strftime(self._files.DT_FORMAT)}'
         cmd = f'ls -l {prev_dir}/* {working_dir}/* | awk ' + "'{print $5,$9}'"
         p = await asyncio.create_subprocess_shell(
             cmd,
@@ -104,12 +103,11 @@ class Storage:
         cfg = Config.cameras[self._hash]
         if 'sensitivity' not in cfg or not cfg['sensitivity'] or cfg['sensitivity'] <= 1 or len(file_list) < 2:
             return
-        files = Files(self._hash)
         total_size = 0
         cnt = 0
         for file in file_list[:-1]:
             f = file.split(' ')
-            if int(f[0]) <= files.MIN_FILE_SIZE:
+            if int(f[0]) <= self._files.MIN_FILE_SIZE:
                 continue
             total_size += int(f[0])
             cnt += 1
@@ -117,9 +115,11 @@ class Storage:
             return
 
         last_file = file_list[-1].split(' ')
-        if float(last_file[0]) > total_size / cnt * cfg['sensitivity']:
-            date_time = files.get_datetime_by_path(last_file[1])
-            if self._hash in Share.cam_motions and Share.cam_motions[self._hash] == date_time:
+        average_size = total_size / cnt
+
+        if float(last_file[0]) > average_size * cfg['sensitivity']:
+            date_time = self._files.get_datetime_by_path(last_file[1])
+            if self._hash in Share.cam_motions and Share.cam_motions[self._hash] >= date_time:
                 return
             Share.cam_motions[self._hash] = date_time
             Log.write(f'Storage: motion detected: {date_time} {self._hash}')
@@ -130,7 +130,7 @@ class Storage:
         p = await asyncio.create_subprocess_shell(cmd)
         res = await p.wait()  # returns 0 if success, else 1
         if res == 0:
-            Log.print(f'Storage: watchdog: folder removed: "{self._hash}" {folder}')
+            Log.write(f'Storage: watchdog: folder {folder} removed from {self._hash}')
 
     async def _cleanup(self) -> None:
         """ Cleanup (5 times per day - 00:00 ... 04:00)

@@ -24,7 +24,7 @@ class Server:
         web_server = ThreadingServer((Config.webServerHost, Config.webServerPort), Handler)
         web_server.socket = context.wrap_socket(web_server.socket, server_side=True)
 
-        Log.print(f'Serving HTTP on https://{Config.webServerHost}:{Config.webServerPort}/ ...')
+        Log.write(f'Serving HTTP on https://{Config.webServerHost}:{Config.webServerPort}/ ...')
 
         try:
             web_server.serve_forever()
@@ -32,7 +32,7 @@ class Server:
             pass
 
         web_server.server_close()
-        Log.print('Server stopped.')
+        Log.write('Server stopped.')
 
 
 class ThreadingServer(ThreadingMixIn, HTTPServer):
@@ -123,7 +123,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(file.read())
         except Exception as e:
-            Log.write(f'Web: ERROR: static file not found: "{static_file}" ({repr(e)})')
+            Log.write(f"Web: ERROR: can't open static file {static_file} ({repr(e)})")
             self._send_error()
 
     def _send_page(self, page: str) -> None:
@@ -141,7 +141,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(self._replace_template(template, file.read()))
         except Exception as e:
-            Log.print(f'Web: ERROR: page not found: "{page}" ({repr(e)})')
+            Log.write(f'Web: ERROR: page "{page}" not found ({repr(e)})')
             self._send_error()
 
     def _create_auth_cookie(self) -> str:
@@ -186,7 +186,7 @@ class Handler(BaseHTTPRequestHandler):
             with open(f'{os_path.dirname(os_path.realpath(__file__))}/../client{template}', 'rb') as file:
                 return file.read()
         except Exception as e:
-            Log.print(f'Web: ERROR: content not found: "{template}" ({repr(e)})')
+            Log.write(f'Web: ERROR: template "{template}" not found ({repr(e)})')
 
     def _send_video(self, file_path: str, file_size: int) -> None:
         query_date_time = self._query['dt'][0] if 'dt' in self._query else ''
@@ -224,7 +224,7 @@ class Handler(BaseHTTPRequestHandler):
                 res[hash] = {'dt': date_time, 'name': Config.cameras[hash]["name"]}
 
             cnt += 1
-            if not res and cnt < 300:
+            if not res and cnt < 600:
                 time.sleep(1)
                 continue
 
@@ -234,7 +234,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps(res).encode('UTF-8'))
             except Exception as e:
-                Log.print(f'Web bell: send ERROR: {repr(e)}')
+                Log.write(f'Web bell: send ERROR {repr(e)}')
 
             return
 

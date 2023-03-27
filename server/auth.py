@@ -41,7 +41,7 @@ class Auth:
         p = subprocess.run(cmd, shell=True, capture_output=True)
         res = p.stdout.decode()
         if not res:
-            Log.print('Auth encryption ERROR: the OPENSSL may not be installed')
+            Log.write('Auth encryption ERROR: the OPENSSL may not be installed')
         return quote_plus(res)
 
     @staticmethod

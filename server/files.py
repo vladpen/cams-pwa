@@ -1,7 +1,7 @@
 import re
 import subprocess
 from datetime import datetime, timedelta
-from typing import Tuple, List, Any
+from typing import Tuple, List, Dict, Any
 from _config import Config
 from log import Log
 
@@ -19,6 +19,7 @@ class Files:
         self._cam_path = f'{Config.storage_path}/{Config.cameras[cam_hash]["path"]}'
         self._range = self.MAX_RANGE
         self._root_folder = []
+        self._date_time = ''
 
     def get_days(self):
         return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
@@ -33,7 +34,7 @@ class Files:
         fallback = (datetime.now() - timedelta(minutes=1)).strftime(self.DT_FORMAT).split('/')
         return self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
 
-    def get_by_range(self, rng) -> Tuple[str, int]:
+    def get_by_range(self, rng: int) -> Tuple[str, int]:
         rng = min(max(rng, 0), self.MAX_RANGE)
 
         start_date = self._get_start_date()
@@ -44,16 +45,17 @@ class Files:
         parts = wd.split('/')
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], -1)
 
-    def get_next(self, raw_step, date_time, sensitivity) -> Tuple[str, int]:
+    def get_next(self, raw_step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
         if not date_time:
             return self.get_live()
 
+        self._date_time = date_time
         steps = [1, 60, 600, 3600]
         step = steps[abs(raw_step) - 1] if 1 <= abs(raw_step) <= len(steps) else 1
         step = step * -1 if raw_step < 0 else step
 
         if sensitivity >= 0:
-            return self._get_next_motion_by_date_time(date_time, sensitivity, step)
+            return self._get_next_motion(sensitivity, step)
 
         file_path = self._get_path_by_datetime(date_time)
         parts = file_path.split('/')
@@ -140,34 +142,28 @@ class Files:
 
         return '', 0
 
-    def _get_next_motion_by_date_time(self, date_time: str, sensitivity: int, step: int) -> Tuple[str, int]:
+    def _get_next_motion(self, sensitivity: int, step: int) -> Tuple[str, int]:
         sign = 1 if step > 0 else -1
         if step >= 60 or step <= -60:
             folder = (
-                datetime.strptime(date_time, self.DT_FULL_FORMAT) + timedelta(seconds=abs(step)) * sign
+                datetime.strptime(self._date_time, self.DT_FULL_FORMAT) + timedelta(seconds=abs(step)) * sign
             ).strftime(self.DT_FORMAT)
-            file_name = ''
         else:
-            path = self._get_path_by_datetime(date_time)
-            file_name = path.split('/')[-1]
+            path = self._get_path_by_datetime(self._date_time)
             folder = '/'.join(path.split('/')[0:-1])
 
-        last_sizes = []
+        last_files = {}
         prev_folder = (datetime.strptime(folder, self.DT_FORMAT) - timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
         files = self._get_files(prev_folder)
         if files:
             for file in files:
                 f = file.split(' ')
-                last_sizes.insert(0, int(f[0]))
-        return self._motion_detector(folder, file_name, last_sizes, 100 - max(0, min(90, sensitivity)), sign)
+                last_files[f'{prev_folder}/{f[1]}'] = int(f[0])
 
-    def _motion_detector(
-            self,
-            folder: str,
-            file_name: str,
-            last_sizes: List[int],
-            sensitivity: int,
-            sign: int) -> Tuple[str, int]:
+        return self._motion_detector(folder, last_files, 100 - max(0, min(90, sensitivity)), sign)
+
+    def _motion_detector(self, folder: str, last_files: Dict[str, int], sensitivity: int, sign: int) -> Tuple[str, int]:
+        requested_path = self._get_path_by_datetime(self._date_time)
         files = self._get_files(folder)
         if not files:
             if sign > 0 and folder >= self._get_folders()[-1]:
@@ -180,7 +176,7 @@ class Files:
                 next_folder = '/'.join(file[0][len(self._cam_path) + 1:].split('/')[0:-1])
                 if (sign > 0 and next_folder <= folder) or (sign < 0 and next_folder >= folder):
                     return '', 0
-                return self._motion_detector(next_folder, '', last_sizes, sensitivity, sign)
+                return self._motion_detector(next_folder, last_files, sensitivity, sign)
 
         sens = 1 + sensitivity / 100
         if sign < 0:
@@ -189,23 +185,26 @@ class Files:
             f = file.split(' ')
             if float(f[0]) < self.MIN_FILE_SIZE:  # exclude broken files
                 continue
-            average_size = sum(last_sizes) / len(last_sizes) if last_sizes else 0
+            average_size = sum(last_files.values()) / len(last_files) if last_files else 0
 
-            last_sizes.insert(0, int(f[0]))
-            del last_sizes[self.MD_AVERAGE_LEN:]
+            last_files[f'{folder}/{f[1]}'] = int(f[0])
+            if len(last_files) > 5:  # self.MD_AVERAGE_LEN:
+                first_key = next(iter(last_files))
+                del last_files[first_key]
 
-            if file_name and ((sign > 0 and file_name >= f[1]) or (sign < 0 and file_name <= f[1])):
+            path = f'{folder}/{f[1]}'
+
+            if (sign > 0 and requested_path >= path) or (sign < 0 and requested_path <= path):
                 continue  # don't detect the files before last motion & last motion itself
 
             if average_size and float(f[0]) > average_size * sens:
-                path = f'{self._cam_path}/{folder}/{f[1]}'
-                return path, int(f[0])
+                return f'{self._cam_path}/{folder}/{f[1]}', int(f[0])
 
         if folder >= datetime.now().strftime(self.DT_FORMAT):
             return self.get_live()
 
-        folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
-        return self._motion_detector(folder, '', last_sizes, sensitivity, sign)
+        next_folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
+        return self._motion_detector(next_folder, last_files, sensitivity, sign)
 
     def _get_folders(self, folder: str = '') -> List[str]:
         if not folder and self._root_folder:

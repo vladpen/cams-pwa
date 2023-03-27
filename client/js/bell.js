@@ -64,6 +64,19 @@ class Bell {
         }
     }
 
+    static _updateNavList = (hash, hm) => {
+        const nav = document.querySelector('main .nav');
+        if (!nav) {
+            return;
+        }
+        for (const row of nav.querySelectorAll('li')) {
+            if (row.dataset.hash == hash) {
+                row.querySelector('i').textContent = hm;
+                break;
+            }
+        }
+    }
+
     static _fetch = () => {
         clearTimeout(this._fetchTimerID);
         if (!this._btnBell.classList.contains('selected')) {
@@ -83,9 +96,10 @@ class Bell {
                     if (row.dt <= this._lastDateTime) {
                         return;  // continue forEach
                     }
-                    const t = row.dt.slice(-6, -4) + ':' + row.dt.slice(-4, -2)
-                    res.push(`<a href="/?page=cam&hash=${hash}">${row.name}</a> <i>${t}<i>`);
+                    const hm = row.dt.slice(-6, -4) + ':' + row.dt.slice(-4, -2)
+                    res.push(`<a href="/?page=cam&hash=${hash}">${row.name}</a><i>${hm}<i>`);
                     this._lastDateTime = row.dt;
+                    this._updateNavList(hash, hm);
                 });
                 if (!res.length) {
                     return

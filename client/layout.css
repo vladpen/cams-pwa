@@ -71,4 +71,4 @@ header, main, footer {transition: filter 0.3s ease-in-out;}
 .modal .close {display: inline-block; margin-left: 0.5em; vertical-align: top; cursor: pointer; color: #aaa;}
 .modal .content {display: inline-block;}
 .modal .content a {text-decoration: none; color: #fff;}
-.modal .content i {margin-left: 0.2em; color: #888;}
+.modal .content i, .nav li i {margin-left: 0.5em; color: #888;}
