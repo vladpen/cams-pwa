@@ -8,15 +8,16 @@ from log import Log
 
 class Files:
     MAX_RANGE = 2000
-    DT_FORMAT = '%Y%m%d/%H/%M'
-    DT_FULL_FORMAT = '%Y%m%d%H%M%S'
+    DT_ROOT_FORMAT = '%Y-%m-%d'
+    DT_FORMAT = '%Y-%m-%d/%H/%M'
+    DT_WEB_FORMAT = '%Y%m%d%H%M%S'
     DEPTH = 3
     MIN_FILE_SIZE = 1000
     MD_AVERAGE_LEN = 10
 
     def __init__(self, cam_hash: str):
         self._hash = cam_hash
-        self._cam_path = f'{Config.storage_path}/{Config.cameras[cam_hash]["path"]}'
+        self._cam_path = f'{Config.storage_path}/{Config.cameras[cam_hash]["folder"]}'
         self._range = self.MAX_RANGE
         self._root_folder = []
         self._date_time = ''
@@ -87,21 +88,20 @@ class Files:
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], sign)
 
     def get_datetime_by_path(self, path: str) -> str:
-        parts = path[len(self._cam_path) + 1:].split('/')
-        return ''.join(parts[0:-1]) + parts[-1].replace('.mp4', '')
+        return re.sub(r'(-|/|.mp4)', '', path[len(self._cam_path) + 1:])
 
     def get_range_by_path(self, path: str) -> str:
         if self._range > self.MAX_RANGE:
             return self._range
         start_date = self._get_start_date()
         delta_seconds = (
-            datetime.strptime(self.get_datetime_by_path(path), self.DT_FULL_FORMAT) - start_date
+            datetime.strptime(self.get_datetime_by_path(path), self.DT_WEB_FORMAT) - start_date
         ).total_seconds()
         total_seconds = (datetime.now() - start_date).total_seconds()
         return str(round(self.MAX_RANGE * delta_seconds / total_seconds))
 
     def _get_start_date(self) -> datetime:
-        return datetime.strptime(self._get_folders()[0], '%Y%m%d')
+        return datetime.strptime(self._get_folders()[0], self.DT_ROOT_FORMAT)
 
     def _find_nearest_file(self, parent: str, folder: str, step: int) -> Tuple[str, int]:
         """ If folder is set, shift left (to parent folder); else shift right (to child folder) """
@@ -146,7 +146,7 @@ class Files:
         sign = 1 if step > 0 else -1
         if step >= 60 or step <= -60:
             folder = (
-                datetime.strptime(self._date_time, self.DT_FULL_FORMAT) + timedelta(seconds=abs(step)) * sign
+                datetime.strptime(self._date_time, self.DT_WEB_FORMAT) + timedelta(seconds=abs(step)) * sign
             ).strftime(self.DT_FORMAT)
         else:
             path = self._get_path_by_datetime(self._date_time)
@@ -188,7 +188,7 @@ class Files:
             average_size = sum(last_files.values()) / len(last_files) if last_files else 0
 
             last_files[f'{folder}/{f[1]}'] = int(f[0])
-            if len(last_files) > 5:  # self.MD_AVERAGE_LEN:
+            if len(last_files) > self.MD_AVERAGE_LEN:
                 first_key = next(iter(last_files))
                 del last_files[first_key]
 
@@ -255,9 +255,9 @@ class Files:
 
     @staticmethod
     def _get_path_by_datetime(dt: str) -> str:
-        if not re.match('^\d{14}$', dt):
+        if not re.match(r'^\d{14}$', dt):
             return ''
-        return f'{dt[0:8]}/{dt[8:10]}/{dt[10:12]}/{dt[12:14]}.mp4'
+        return f'{dt[0:4]}-{dt[4:6]}-{dt[6:8]}/{dt[8:10]}/{dt[10:12]}/{dt[12:14]}.mp4'
 
     @staticmethod
     def _exec(cmd: str, default: Any = '') -> Any:

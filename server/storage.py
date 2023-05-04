@@ -8,10 +8,12 @@ from log import Log
 
 class Storage:
     CLEANUP_HOUR_MINUTE = '0000'
+    DT_ROOT_FORMAT = '%Y-%m-%d'
+    DT_FORMAT = '%Y-%m-%d/%H/%M'
 
     def __init__(self, camera_hash):
         self._hash = camera_hash
-        self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["path"]}'
+        self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}'
         self._start_time = None
         self._files = Files(self._hash)
 
@@ -26,7 +28,7 @@ class Storage:
     async def _start_saving(self, caller: str = '') -> None:
         """ We'll use system (linux) commands for this job
         """
-        await self._mkdir(datetime.now().strftime('%Y%m%d/%H/%M'))
+        await self._mkdir(datetime.now().strftime(self.DT_FORMAT))
 
         cfg = Config.cameras[self._hash]
         cmd = Config.storage_command.replace('{url}', cfg['url']).replace('{cam_path}', f'{self._cam_path}')
@@ -74,7 +76,7 @@ class Storage:
         stdout, _stderr = await p.communicate()
         res = stdout.decode().strip().splitlines()[-10:]
 
-        await self._mkdir((datetime.now() + timedelta(minutes=1)).strftime('%Y%m%d/%H/%M'))
+        await self._mkdir((datetime.now() + timedelta(minutes=1)).strftime(self.DT_FORMAT))
         await self._cleanup()
 
         self._live_motion_detector(res[:-1])
@@ -95,9 +97,9 @@ class Storage:
 
         # Remove previous folders if empty
         prev_min = datetime.now() - timedelta(minutes=1)
-        await self._remove_folder_if_empty(prev_min.strftime('%Y%m%d/%H/%M'))
-        await self._remove_folder_if_empty(prev_min.strftime('%Y%m%d/%H'))
-        await self._remove_folder_if_empty(prev_min.strftime('%Y%m%d'))
+        await self._remove_folder_if_empty(prev_min.strftime(self.DT_FORMAT))
+        await self._remove_folder_if_empty(prev_min.strftime(f'{self.DT_ROOT_FORMAT}/%H'))
+        await self._remove_folder_if_empty(prev_min.strftime(self.DT_ROOT_FORMAT))
 
     def _live_motion_detector(self, file_list) -> None:
         cfg = Config.cameras[self._hash]
@@ -125,7 +127,7 @@ class Storage:
             Log.write(f'Storage: motion detected: {date_time} {self._hash}')
 
     async def _remove_folder_if_empty(self, folder) -> None:
-        path = f'{Config.storage_path}/{Config.cameras[self._hash]["path"]}/{folder}'
+        path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}/{folder}'
         cmd = f'rmdir {path}'
         p = await asyncio.create_subprocess_shell(cmd)
         res = await p.wait()  # returns 0 if success, else 1
@@ -147,7 +149,9 @@ class Storage:
         if not stdout:
             return
 
-        oldest_dir_name = (datetime.now() - timedelta(days=Config.storage_period_days + 1)).strftime('%Y%m%d')
+        oldest_dir_name = (
+            datetime.now() - timedelta(days=Config.storage_period_days + 1)
+        ).strftime(self.DT_ROOT_FORMAT)
 
         for row in stdout.decode().strip().split('\n'):
             wd = row.split('/')[-1]

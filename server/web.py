@@ -69,7 +69,6 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_page(self._query['page'][0])
 
         self.files = Files(self.hash)
-        self.cam_path = Config.cameras[self.hash]['path']
 
         if 'live' in self._query:
             return self._send_video(*self.files.get_live())
