@@ -1,7 +1,8 @@
 import re
 import subprocess
+import time
 from datetime import datetime, timedelta
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List, Dict, Any, Optional
 from _config import Config
 from log import Log
 
@@ -25,15 +26,20 @@ class Files:
     def get_days(self):
         return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
 
-    def get_live(self) -> Tuple[str, int]:
+    def get_live(self, date_time: Optional[str] = '') -> Tuple[str, int]:
         self._range = self.MAX_RANGE + 1
 
         path, size = self._get_live_file()  # checks now and last minute folder
-        if size:
+        if not size:
+            fallback = (datetime.now() - timedelta(minutes=1)).strftime(self.DT_FORMAT).split('/')
+            return self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
+
+        segment_date_time = self.get_datetime_by_path(path)
+        if not date_time or segment_date_time > date_time or not Config.storage_enabled:
             return path, size
 
-        fallback = (datetime.now() - timedelta(minutes=1)).strftime(self.DT_FORMAT).split('/')
-        return self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
+        time.sleep(0.5)
+        return self.get_live(date_time)
 
     def get_by_range(self, rng: int) -> Tuple[str, int]:
         rng = min(max(rng, 0), self.MAX_RANGE)
@@ -82,7 +88,7 @@ class Files:
         ).strftime(self.DT_FORMAT)
 
         if step > 0 and folder >= datetime.now().strftime(self.DT_FORMAT):
-            return self.get_live()
+            return self.get_live(date_time)
 
         parts = folder.split('/')
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], sign)
@@ -219,7 +225,7 @@ class Files:
         wd = f"{self._cam_path}/{folder}"
         cmd = f'ls -l {wd} | awk ' + "'{print $5,$9}'"
         res = self._exec(cmd)
-        if not res and folder < datetime.now().strftime(self.DT_FORMAT):
+        if not res and folder and folder < datetime.now().strftime(self.DT_FORMAT):
             self._exec(f'rmdir {self._cam_path}/{folder}')  # delete empty folder
         return res.splitlines()
 
@@ -232,6 +238,8 @@ class Files:
         size = int(file[0])
         if size > self.MIN_FILE_SIZE:
             return path, size
+        if position < 0 and len(files) > abs(position):
+            return self._get_file(folder, position - 1)
         return '', 0
 
     def _get_live_file(self):

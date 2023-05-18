@@ -1,17 +1,22 @@
 class Config:
     # Camera(s) settings.
-    #    * The keys of this dictionary will be called "camera hash".
+    #    The keys of this dictionary will be called "camera hash".
     #    * "folder" is used for the storage.
     #    * "url" must contain at least <protocol>://<host>
     #    * "name" is just visible camera name, can include emoji
+    #    * "codecs": RFC 6381 information about video/audio codecs (part of Media Source type),
+    #       for example: "hev1.1.6.L120.0" (H.265), "avc1.42E01E, mp4a.40.2" (H.264 with audio channel)
+    #    * "storage_command": can owerwrite common command (set UDP mode here, enable audio channel, etc.)
     #    * "sensitivity" is used as threasold value for the Motion Detector.
-    #    *     Must be more than 1. Set to 0 to disable.
+    #       Must be more than 1. Set to 0 to disable.
     #
     cameras = {
         'some-URL-compatible-string/including-UTF-characters': {
             'folder': 'some folder in the storage_path',
             'url': 'rtsp://[<login>:<password>@]<host>[:554][/<params>]',
             'name': 'Any camera name',
+            'codecs': '',
+            'storage_command': '',
             'sensitivity': 1.5,
         },
     }
@@ -24,8 +29,11 @@ class Config:
         }
     }
 
-    # Web page title
+    # Home page title
     title = 'Cams'
+    # PWA title.
+    # Useful for multiple app instances accessed over a local network and the web
+    web_title = 'Cams'
 
     webServerHost = '0.0.0.0'
     webServerPort = 8000
@@ -57,13 +65,15 @@ class Config:
 
     # {url} = cameras.hash.url
     # {cam_path} = storage_path/cameras.hash.folder
-    # Remove "-c:a aac" option if the cameras don't support audio channels
+    # Add "-c:a aac" option here if all the cameras support audio channels
     storage_command = (
-        'ffmpeg -i {url} -c:v copy -c:a aac -v fatal -f segment -reset_timestamps 1 '
-        '-strftime 1 {cam_path}/%Y-%m-%d/%H/%M/%S.mp4')
+        'ffmpeg -rtsp_transport tcp -i {url} -c:v copy -v fatal -f segment '
+        '-segment_format_options movflags=frag_keyframe+empty_moov+default_base_moof '
+        '-reset_timestamps 1 -strftime 1 {cam_path}/%Y-%m-%d/%H/%M/%S.mp4')
 
     storage_period_days = 14
-    storage_enabled = False
 
+    # Debug options
+    debug = False
+    storage_enabled = True
     web_enabled = True
-    debug = True

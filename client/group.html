@@ -24,8 +24,8 @@
 <script src="/js/group.js"></script>
 <script src="/js/bell.js"></script>
 <script>
-    const group = new Group();
-    group.run({cams});
+    const group = new Group({cams});
+    group.run();
     Bell.run();
     if ('wakeLock' in navigator) {
         navigator.wakeLock.request('screen');

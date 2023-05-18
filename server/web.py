@@ -69,16 +69,16 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_page(self._query['page'][0])
 
         self.files = Files(self.hash)
+        date_time = self._query['dt'][0] if 'dt' in self._query else ''
 
         if 'live' in self._query:
-            return self._send_video(*self.files.get_live())
+            return self._send_segment(*self.files.get_live(date_time))
         elif 'range' in self._query:
-            return self._send_video(*self.files.get_by_range(int(self._query['range'][0])))
+            return self._send_segment(*self.files.get_by_range(int(self._query['range'][0])))
         elif 'next' in self._query:
             step = int(self._query['next'][0])
-            date_time = self._query['dt'][0] if 'dt' in self._query else ''
             sensitivity = int(self._query['md'][0]) if 'md' in self._query else -1
-            return self._send_video(*self.files.get_next(step, date_time, sensitivity))
+            return self._send_segment(*self.files.get_next(step, date_time, sensitivity))
 
         self._send_error()  # No valid route found
 
@@ -111,6 +111,12 @@ class Handler(BaseHTTPRequestHandler):
 
         self.auth = Auth(self.cookie['auth'].value if 'auth' in self.cookie else None)
 
+    def _get_client_type(self) -> str:
+        host = self.headers.get('Host').split(':')[0]
+        if host == '127.0.0.1' or host == 'localhost' or host.startswith('192.168.'):
+            return 'local'
+        return 'web'
+
     def _send_static(self, static_file: str) -> None:
         if not re.search(r'^/([a-z]+/)*[a-z\d\.]+$', static_file):
             return self._send_error()
@@ -120,6 +126,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header('Content-Type', mime_type)
                 self.end_headers()
+                if static_file == '/cams.webmanifest':
+                    title = Config.web_title if self._get_client_type() == 'web' else Config.title
+                    self.wfile.write(file.read().replace('{title}'.encode('UTF-8'), title.encode('UTF-8')))
+                    return
                 self.wfile.write(file.read())
         except Exception as e:
             Log.write(f"Web: ERROR: can't open static file {static_file} ({repr(e)})")
@@ -150,12 +160,13 @@ class Handler(BaseHTTPRequestHandler):
         content = content.replace('{content}'.encode('UTF-8'), self._get_content(template))
         title = Config.title
 
+        cams_list = {}
+        for hash, cam in Config.cameras.items():
+            if self.auth.info() == Config.master_cam_hash or self.auth.info() == hash:
+                cams_list[hash] = {'name': cam['name'], 'codecs': cam['codecs'], 'sensitivity': cam['sensitivity']}
+
         if template == '/index.html':
-            cams_list = {}
             groups_list = {}
-            for k, v in Config.cameras.items():
-                if self.auth.info() == Config.master_cam_hash or self.auth.info() == k:
-                    cams_list[k] = {'name': v['name']}
             if hasattr(Config, 'groups'):
                 for k, v in Config.groups.items():
                     if self.auth.info() == Config.master_cam_hash:
@@ -167,15 +178,26 @@ class Handler(BaseHTTPRequestHandler):
                 '{groups}'.encode('UTF-8'), json.dumps(groups_list).encode('UTF-8')
             )
         elif template == '/cam.html':
+            if self.hash not in cams_list:
+                return ''
+            cams_list[self.hash]
             self.files = Files(self.hash)
-            title = Config.cameras[self.hash]['name']
+            cam = Config.cameras[self.hash]
+            title = cam['name']
             content = content.replace(
-                '{days}'.encode('UTF-8'), json.dumps(self.files.get_days()).encode('UTF-8'))
+                '{days}'.encode('UTF-8'), json.dumps(self.files.get_days()).encode('UTF-8')
+            ).replace(
+                '{cam_info}'.encode('UTF-8'), json.dumps(cams_list[self.hash]).encode('UTF-8')
+            )
         elif template == '/group.html':
+            cams = {}
+            for hash in Config.groups[self.hash]['cams']:
+                if hash in cams_list:
+                    cams[hash] = cams_list[hash]
             if hasattr(Config, 'groups'):
                 title = Config.groups[self.hash]['name']
             content = content.replace(
-                '{cams}'.encode('UTF-8'), json.dumps(Config.groups[self.hash]['cams']).encode('UTF-8')
+                '{cams}'.encode('UTF-8'), json.dumps(cams).encode('UTF-8')
             )
         return content.replace('{title}'.encode('UTF-8'), title.encode('UTF-8'))
 
@@ -187,7 +209,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             Log.write(f'Web: ERROR: template "{template}" not found ({repr(e)})')
 
-    def _send_video(self, file_path: str, file_size: int) -> None:
+    def _send_segment(self, file_path: str, file_size: int) -> None:
         query_date_time = self._query['dt'][0] if 'dt' in self._query else ''
         file_date_time = self.files.get_datetime_by_path(file_path)
 

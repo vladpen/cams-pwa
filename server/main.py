@@ -17,7 +17,9 @@ async def main() -> None:
         # Start streams saving
         for camera_hash in Config.cameras.keys():
             s = Storage(camera_hash)
+            await asyncio.sleep(0.1)
             tasks.append(asyncio.create_task(s.run()))
+            await asyncio.sleep(0.1)
             tasks.append(asyncio.create_task(s.watchdog()))
 
     for t in tasks:

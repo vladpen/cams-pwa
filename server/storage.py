@@ -31,13 +31,19 @@ class Storage:
         await self._mkdir(datetime.now().strftime(self.DT_FORMAT))
 
         cfg = Config.cameras[self._hash]
-        cmd = Config.storage_command.replace('{url}', cfg['url']).replace('{cam_path}', f'{self._cam_path}')
+        if 'storage_command' in cfg and cfg['storage_command']:
+            cmd = cfg['storage_command']
+        else:
+            cmd = Config.storage_command
+        cmd = cmd.replace('{url}', cfg['url']).replace('{cam_path}', f'{self._cam_path}')
 
         # Run given command in background
         # Important: don't use create_subprocess_SHELL for this command!
         #
+        await asyncio.sleep(0.1)
         self.main_process = await asyncio.create_subprocess_exec(*cmd.split())
         self._start_time = datetime.now()
+        await asyncio.sleep(0.1)
 
         Log.write(f'Storage:{caller} start main process {self.main_process.pid} for {self._hash}')
 
@@ -103,7 +109,7 @@ class Storage:
 
     def _live_motion_detector(self, file_list) -> None:
         cfg = Config.cameras[self._hash]
-        if 'sensitivity' not in cfg or not cfg['sensitivity'] or cfg['sensitivity'] <= 1 or len(file_list) < 2:
+        if cfg['sensitivity'] <= 1 or len(file_list) < 2:
             return
         total_size = 0
         cnt = 0

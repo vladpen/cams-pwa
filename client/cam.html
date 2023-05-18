@@ -9,9 +9,8 @@
     </svg>
 </header>
 <main class="fit-height">
-    <div class="video-box" id="vb0">
-        <video class="active"></video>
-        <video class="hidden"></video>
+    <div class="video-box">
+        <video></video>
     </div>
 </main>
 <footer class="bar hidden invisible">
@@ -53,8 +52,8 @@
 <script src="/js/cam.js"></script>
 <script src="/js/bell.js"></script>
 <script>
-    const cam = new Cam();
-    cam.run('vb0', {days});
+    const cam = new Cam(document.querySelector('video'), {cam_info}, {days});
+    cam.run();
     Bell.run();
     if ('wakeLock' in navigator) {
         navigator.wakeLock.request('screen');

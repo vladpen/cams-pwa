@@ -1,6 +1,6 @@
 class Base {
     ASPECT_RATIO = 16 / 9;
-    MAX_SPEED_MOBILE = 5;
+    MAX_SPEED_MOBILE = 3;
     MAX_RANGE = 2000;
 
     header = document.querySelector('header');
@@ -27,7 +27,7 @@ class Base {
         this.header.style.left = vp.pageLeft + 'px';
         this.header.style.top = vp.pageTop + 'px';
         this.footer.style.left = vp.pageLeft + 'px';
-        this.footer.style.top = vp.pageTop + vp.height - (this.footer.offsetHeight) / scale + 'px';
+        this.footer.style.top = vp.pageTop + vp.height - (this.footer.offsetHeight + 1) / scale + 'px';
 
         if (this.timeRange) {
             this.speedRange.classList.add('hidden');

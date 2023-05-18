@@ -1,17 +1,17 @@
 class Group extends Base {
-    run = cams => {
+    constructor(cams) {
+        super();
+        this._cams = cams;
+    }
+
+    run = () => {
         const box = document.querySelector('.group-box');
-        for (let i = 0; i < cams.length; i++) { //  const hash of cams
-            const hash = cams[i];
+        for (let hash in this._cams) {
             const frame = document.createElement('div');
-            frame.id = 'vb' + i;
             frame.classList.add('video-box');
+            const video = document.createElement('video');
+            frame.append(video);
             box.append(frame);
-            const active = document.createElement('video');
-            active.classList.add('active');
-            const hidden = document.createElement('video');
-            hidden.classList.add('hidden');
-            frame.append(active, hidden);
 
             frame.onclick = () => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -19,8 +19,8 @@ class Group extends Base {
                 let overlay = document.createElement('div');
                 frame.append(overlay);
             }
-            const player = new Player();
-            player.start(frame.id, hash);
+            const player = new Player(video, hash, this._cams[hash]);
+            player.start();
         }
         document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;
@@ -34,8 +34,8 @@ class Group extends Base {
 
         this.btnPlay.classList.add('hidden');
         this.btnPlay.onclick = () => {
-            for (const active of document.querySelectorAll('.video-box .active')) {
-                active.play();
+            for (const video of document.querySelectorAll('video')) {
+                video.play();
             }
             this.footer.remove();
         }

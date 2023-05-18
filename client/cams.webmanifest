@@ -1,9 +1,9 @@
 {
     "start_url": "/",
     "scope" : "/",
-    "name": "Cams PWA",
-    "short_name": "Cams PWA",
-    "description": "IP cameras player",
+    "name": "{title}",
+    "short_name": "{title}",
+    "description": "{title}",
     "background_color": "#000",
     "theme_color": "#000",
     "orientation": "any",
