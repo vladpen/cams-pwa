@@ -14,11 +14,13 @@ form input.error {background: #fd7;}
 .group-box {display: flex; flex-wrap: wrap; justify-content: center;}
 .fit-width {width: 100%;}
 .fit-height {height: 100%;}
-.bar {position: absolute; z-index: 3; top: 50%; width: 100%; transform-origin: 0 0; color: #fff; opacity: 1; visibility: visible;}
+.bar {
+    position: absolute; z-index: 3; top: 50%; width: 100%; transform-origin: 0 0;
+    color: #fff; opacity: 1; visibility: visible;}
 .bar.invisible {opacity: 0; visibility: hidden; transition: visibility 0.5s, opacity 0.5s; transition-delay: 5s;}
 .bar span {display: inline-flex;}
 .bar .arch {position: relative;}
-.bar .arch-range {position: absolute; top: -10em; width: 3px; height: 9.5em; -webkit-appearance: slider-vertical;}
+.bar .arch .range {position: absolute; top: -10em; width: 3px; height: 9.5em; -webkit-appearance: slider-vertical;}
 .bar .speed-range {left: 1.3em;}
 .bar .motion-range {right: 1.3em;}
 header svg, footer svg {
@@ -30,7 +32,7 @@ header svg, footer svg {
 svg.big {height: 1.2em; padding: 0.4em;}
 svg.bell-btn {margin-left: auto; stroke-width: 2px; fill: none;}
 svg.selected {stroke: #fa0; fill: #fa0;}
-.disabled svg {cursor: inherit; stroke: #444; fill: #444;}
+.disabled svg {cursor: default; filter: opacity(0.3);}
 
 main {width: 100%; display: flex; justify-content: center; align-items: center;}
 header {display: flex; font-size: 1.2em;}
@@ -39,14 +41,14 @@ header .title {align-items: center; padding: 0 0.3em 0 0;}
 footer {display: grid; font-size: 1.2em;}
 footer section {display: flex; justify-content: center; align-items: center; white-space: nowrap;}
 footer .time-range {
-    appearance: none; cursor: pointer;
-    width: 100%; height: 2px; margin: 1em auto 0 auto; background-image: linear-gradient(#ddd, #ddd); display: block;
+    appearance: none; display: block; cursor: pointer;
+    width: 100%; height: 2px; margin: 1em auto 0 auto;  background-color: rgb(200, 200, 200);
 }
-footer .time-range:hover {background-image: linear-gradient(#fff, #fff);}
-footer .time-range::-webkit-slider-thumb {appearance: none; width: 2em; height: 2em; border-radius: 50%; background: #08f;}
+footer .time-range::-webkit-slider-thumb {
+    appearance: none; width: 2em; height: 2em; border-radius: 50%; background: #08f; opacity: 1;}
 footer .range-box {
     height: 37px; padding-bottom: 8px; background-size: 0 50px;
-    background-image: radial-gradient(circle, #fff 3px, rgba(0, 0, 0, 0) 1px);
+    background-image: radial-gradient(circle, rgb(200,200,200) 3px, rgba(0, 0, 0, 0) 1px);
 }
 .nav {list-style-type: none; margin: auto; padding: 0;}
 .nav li {padding: 0.5em 2em;}
@@ -63,8 +65,9 @@ footer .range-box {
 header, main, footer {transition: filter 0.3s ease-in-out;}
 .dimmed header, .dimmed main, .dimmed footer {filter: brightness(0.5)}
 .modal {
-    position: fixed; left: 50%; top: 2em; transform: translate(-50%, 0); z-index: 4; padding: 0.2em 0.5em; width: fit-content;
-    white-space: nowrap; border: 1px solid #888; border-radius: 5px; box-shadow: 0 0 10px #000; background-color: #222;
+    position: fixed; left: 50%; top: 2em; transform: translate(-50%, 0); z-index: 4;
+    padding: 0.2em 0.5em; width: fit-content; white-space: nowrap;
+    border: 1px solid #888; border-radius: 5px; box-shadow: 0 0 10px #000; background-color: #222;
 }
 .modal .close {display: inline-block; margin-left: 0.5em; vertical-align: top; cursor: pointer; color: #aaa;}
 .modal .content {display: inline-block;}

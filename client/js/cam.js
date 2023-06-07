@@ -36,21 +36,22 @@ class Cam extends Base {
         this.timeRange.ontouchstart = this._onRangeDown;
         this.timeRange.onmouseup = this._onRangeChange;
         this.timeRange.ontouchend = this._onRangeChange;
-
-        for (const e of this.footer.querySelectorAll('.arch-range')) {
-            e.onmousedown = this.showBars;
-            e.ontouchstart = this.showBars;
-            e.onmouseup = this.fadeBars;
-            e.ontouchend = this.fadeBars;
-        }
-
         this.timeRange.oninput = this._player.onRangeInput;
 
         if (navigator.userAgentData.mobile) {
             this.speedRange.max = this.MAX_SPEED_MOBILE;
         }
-        this.footer.querySelector('.rwd').onclick = this._rwd;
-        this.footer.querySelector('.fwd').onclick = this._fwd;
+        this.header.onmousedown = this.showBars;
+        this.header.ontouchstart = this.showBars;
+        this.header.onmouseup = this.fadeBars;
+        this.header.ontouchend = this.fadeBars;
+        this.footer.onmousedown = this.showBars;
+        this.footer.ontouchstart = this.showBars;
+        this.footer.onmouseup = this.fadeBars;
+        this.footer.ontouchend = this.fadeBars;
+
+        this.footer.querySelector('.rwd').onclick = this._seek;
+        this.footer.querySelector('.fwd').onclick = this._seek;
         this.footer.querySelector('.range-box').style.backgroundSize = 100 / this._days + "% 50px";
         this.btnMotion.onclick = this._toggleMotion;
         this.btnSpeed.onclick = this._toggleSpeed;
@@ -70,26 +71,24 @@ class Cam extends Base {
     }
 
     _onRangeDown = () => {
-        this._stop();
+        this._video.pause();
         this._player.onRangeDown();
     }
 
     _onRangeChange = () => {
-        this.showBars();
         this._player.onRangeChange(this.timeRange.value);
         this._setArchMode();
     }
 
     _togglePlay = () => {
-        this.showBars();
         if (!this.btnPlay.classList.contains('hidden')) {
-            this._video.play().then(this.fadeBars);
+            this._video.play();
             this.showPauseBtn();
             if (this.btnSpeed.classList.contains('selected')) {
                 this._video.playbackRate = this.speedRange.value;
             }
         } else {
-            this._video.play().then(this.fadeBars);
+            this._video.play();
             this._video.pause();
             this.showPlayBtn();
         }
@@ -135,32 +134,12 @@ class Cam extends Base {
         this.resizeBars();
     }
 
-    _stop = () => {
-        this.showBars();
-        this._video.pause();
-    }
-
-    _rwd = (e) => {
-        this._camSeek(e, -1);
-    }
-
-    _fwd = (e) => {
+    _seek = (e) => {
         if (e.target.closest('.disabled')) {
             return;
         }
-        this._camSeek(e, 1);
-    }
-
-    _camSeek = (e, direction) => {
-        this._stop();
-        const btn = e.target.closest('.arrow');
-        const rect = btn.getBoundingClientRect();
-        let mouseX = e.clientX - rect.left;
-        if (direction < 0) {
-            mouseX -= rect.width;
-        }
-        let step = parseInt(mouseX * 4 / rect.width) + direction;
-        this._player.seek(step);
+        this._video.pause();
+        this._player.seek(e.target.dataset.step);
         this._setArchMode();
     }
 
@@ -171,7 +150,6 @@ class Cam extends Base {
             e.classList.remove('disabled');
         }
         this.header.querySelector('.loader').classList.remove('hidden');
-        this.fadeBars();
         document.body.classList.add('arch');
     }
 }

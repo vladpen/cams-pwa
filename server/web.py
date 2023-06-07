@@ -212,19 +212,21 @@ class Handler(BaseHTTPRequestHandler):
     def _send_segment(self, file_path: str, file_size: int) -> None:
         query_date_time = self._query['dt'][0] if 'dt' in self._query else ''
         file_date_time = self.files.get_datetime_by_path(file_path)
-
-        self.send_response(200)
-        if file_path and file_size and query_date_time != file_date_time:
-            self.send_header('Content-Type', 'video/mp4')
-            self.send_header('Content-Length', str(file_size))
-            self.send_header('Cache-Control', 'no-store')
-            self.send_header('X-Datetime', file_date_time)
-            self.send_header('X-Range', self.files.get_range_by_path(file_path))
-            self.end_headers()
-            with open(file_path, 'rb') as video_file:
-                self.wfile.write(video_file.read())
-        else:
-            self.end_headers()
+        try:
+            self.send_response(200)
+            if file_path and file_size and query_date_time != file_date_time:
+                self.send_header('Content-Type', 'video/mp4')
+                self.send_header('Content-Length', str(file_size))
+                self.send_header('Cache-Control', 'no-store')
+                self.send_header('X-Datetime', file_date_time)
+                self.send_header('X-Range', self.files.get_range_by_path(file_path))
+                self.end_headers()
+                with open(file_path, 'rb') as video_file:
+                    self.wfile.write(video_file.read())
+            else:
+                self.end_headers()
+        except Exception as e:
+            Log.write(f'Web: request aborted ({repr(e)})')
 
     def _send_bell(self, last_date_time) -> None:
         if not self.auth.info():

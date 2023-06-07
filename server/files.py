@@ -50,16 +50,13 @@ class Files:
         wd = (start_date + timedelta(minutes=delta_minutes)).strftime(self.DT_FORMAT)
 
         parts = wd.split('/')
-        return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], -1)
+        return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], 1)
 
-    def get_next(self, raw_step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
+    def get_next(self, step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
         if not date_time:
             return self.get_live()
 
         self._date_time = date_time
-        steps = [1, 60, 600, 3600]
-        step = steps[abs(raw_step) - 1] if 1 <= abs(raw_step) <= len(steps) else 1
-        step = step * -1 if raw_step < 0 else step
 
         if sensitivity >= 0:
             return self._get_next_motion(sensitivity, step)
@@ -68,30 +65,42 @@ class Files:
         parts = file_path.split('/')
         wd = '/'.join(parts[0:-1])
 
-        files = self._get_files(wd)
-        if files and abs(step) == 1:
+        files = []
+        if -10 < step < 0:
+            prev_dir = (datetime.strptime(date_time, self.DT_WEB_FORMAT) - timedelta(minutes=1)
+                        ).strftime(self.DT_FORMAT)
+            files = self._get_files_by_folders([prev_dir, wd])
+        elif 0 < step < 10:
+            next_dir = (datetime.strptime(date_time, self.DT_WEB_FORMAT) + timedelta(minutes=1)
+                        ).strftime(self.DT_FORMAT)
+            files = self._get_files_by_folders([wd, next_dir])
+        if files and abs(step) < len(files):
             arr = files if step > 0 else reversed(files)
+            working_path = f'{self._cam_path}/{file_path}'
+            i = 0
             for file in arr:
-                file_name = file.split()[1]
-                if (step > 0 and file_name <= parts[-1]) or (step < 0 and file_name >= parts[-1]):
-                    continue
-
                 f = file.split()
-                path = f'{self._cam_path}/{wd}/{f[1]}'
+                path = f[1]
+                if (step > 0 and path <= working_path) or (step < 0 and path >= working_path):
+                    continue
+                i += 1
+                if i < abs(step):
+                    continue
                 if int(f[0]) > self.MIN_FILE_SIZE:
                     return path, int(f[0])
 
         sign = 1 if step > 0 else -1
-        step = max(60, abs(step)) * sign
+        seconds = max(60, abs(step))
         folder = (
-            datetime.strptime(wd, self.DT_FORMAT) + timedelta(seconds=abs(step)) * sign
+            datetime.strptime(wd, self.DT_FORMAT) + timedelta(seconds=seconds) * sign
         ).strftime(self.DT_FORMAT)
 
-        if step > 0 and folder >= datetime.now().strftime(self.DT_FORMAT):
+        if step > 0 and folder > datetime.now().strftime(self.DT_FORMAT):
             return self.get_live(date_time)
 
+        step = -2 if step < 0 else 1
         parts = folder.split('/')
-        return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], sign)
+        return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)
 
     def get_datetime_by_path(self, path: str) -> str:
         return re.sub(r'(-|/|.mp4)', '', path[len(self._cam_path) + 1:])
@@ -110,12 +119,12 @@ class Files:
         return datetime.strptime(self._get_folders()[0], self.DT_ROOT_FORMAT)
 
     def _find_nearest_file(self, parent: str, folder: str, step: int) -> Tuple[str, int]:
-        """ If folder is set, shift left (to parent folder); else shift right (to child folder) """
+        """ If folder is set shift left (to parent folder); else shift right (to child folder) """
         parts = parent.split('/') if parent else []
 
         if (folder and len(parts) == self.DEPTH - 1) or (not folder and len(parts) == self.DEPTH):
             path = f'{parent}/{folder}'.rstrip('/')
-            position = -1 if step < 0 else 0
+            position = step - 1 if step > 0 else step
             file, size = self._get_file(path, position)
             if size:
                 return file, size
@@ -228,6 +237,13 @@ class Files:
         if not res and folder and folder < datetime.now().strftime(self.DT_FORMAT):
             self._exec(f'rmdir {self._cam_path}/{folder}')  # delete empty folder
         return res.splitlines()
+
+    def _get_files_by_folders(self, folders: List[str]) -> List[str]:
+        paths = ''
+        for folder in folders:
+            paths = f'{paths}{self._cam_path}/{folder}/* '
+        cmd = f'ls -l {paths} | awk ' + "'{print $5,$9}'"
+        return self._exec(cmd).splitlines()
 
     def _get_file(self, folder: str, position: int = 0) -> Tuple[str, int]:
         files = self._get_files(folder)

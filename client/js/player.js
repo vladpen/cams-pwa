@@ -1,5 +1,4 @@
 class Player extends Base {
-    _BUFFERED_TIME = 10;
     constructor(video, hash, camInfo) {
         super();
         this._video = video;
@@ -8,7 +7,6 @@ class Player extends Base {
         this._rangeUrl = '/?range={range}&dt={dt}&hash=' + hash;
         this._nextUrl = '/?next={step}&dt={dt}&hash=' + hash;
         this._datetime = '';
-        this._timestampOffset = -1;
         this._lock = false;
         this._setTime = 0;
         this._progress = false;
@@ -24,7 +22,7 @@ class Player extends Base {
         if ('MediaSource' in window && MediaSource.isTypeSupported(this._sourceType)) {
             this._mediaSource.addEventListener('sourceopen', this._onSourceOpen, { once: true });
             this._video.src = URL.createObjectURL(this._mediaSource);
-            this._video.ontimeupdate = this._onTimeUpdate;
+            this._video.addEventListener('timeupdate', this._onTimeUpdate);
         } else {
             console.error('Unsupported MIME type or codec:', this._sourceType);
             return;
@@ -36,9 +34,18 @@ class Player extends Base {
     }
 
     seek = step => {
+
+        console.log(111, this._playMode, this._progress)
+
+        if (this._playMode != 'live' && this._progress) {
+            return;
+        }
+        this._video.removeEventListener('timeupdate', this._onTimeUpdate);
         this._abortController.abort();
-        this._fetchArch(this._nextUrl, { step: step });
-        this._video.play();
+        this._fetchArch(this._nextUrl, { step: step }, () => {
+            this._video.play();
+            this._video.addEventListener('timeupdate', this._onTimeUpdate);
+        }, true);
     }
 
     onRangeDown = () => { // push down
@@ -60,7 +67,7 @@ class Player extends Base {
     _onSourceOpen = () => {
         this._sourceBuffer = this._mediaSource.addSourceBuffer(this._sourceType);
         this._sourceBuffer.mode = 'sequence';
-        this._fetch(this._getSrc(this._liveUrl), () => {
+        this._fetch(this._liveUrl, {}, () => {
             this._video.play().catch(e => {
                 console.error(e.message);
                 this.showPlayBtn();
@@ -69,14 +76,13 @@ class Player extends Base {
     }
 
     _onTimeUpdate = () => {
-        if (this._lock || this._timestampOffset - this._video.currentTime > this._BUFFERED_TIME) {
+        if (this._lock || this._progress || this._sourceBuffer.timestampOffset - this._video.currentTime > 0) {
             return;
         }
-        this._timestampOffset = this._sourceBuffer.timestampOffset;
         if (this._playMode == 'live') {
-            this._fetch(this._getSrc(this._liveUrl));
+            this._fetch(this._liveUrl, {});
         } else {
-            this._fetch(this._getSrc(this._nextUrl, { step: 1 }));
+            this._fetch(this._nextUrl, { step: 1 });
         }
     }
 
@@ -87,6 +93,7 @@ class Player extends Base {
     _setLiveMode = () => {
         this._playMode = 'live'
         this._setTime = 2;
+        this._video.playbackRate = 1;
         document.body.classList.remove('arch');
         if (this.timeRange) {
             this.timeRange.value = this.timeRange.max;
@@ -100,7 +107,7 @@ class Player extends Base {
         }
     }
 
-    _getSrc = (url, args = {}) => {
+    _getUrl = (url, args = {}) => {
         Object.entries(args).forEach(([key, val]) => {
             url = url.replace('{' + key + '}', val);
         });
@@ -111,23 +118,20 @@ class Player extends Base {
         return url;
     }
 
-    _fetchArch = (url, args, callback = null) => {
+    _fetchArch = (url, args, callback, force = false) => {
         this._playMode = 'arch';
-        this._fetch(this._getSrc(url, args), () => {
-            this._setCurrentTime();
-            if (callback) {
-                callback();
-            }
-        });
+        this._setTime = 1;
+        this._fetch(url, args, callback, force);
         for (const e of this.footer.querySelectorAll('.arch')) {
             e.classList.remove('disabled');
         }
     }
 
-    _fetch = (url, callback = null) => {
-        if (this._progress || this._sourceBuffer.updating) {
+    _fetch = (url, args, callback = null, force = false) => {
+        if (!force && (this._progress || this._sourceBuffer.updating)) {
             return;
         }
+        url = this._getUrl(url, args);
         this._progress = true;
         let datetime, rng;
         this._abortController = new AbortController();
@@ -160,9 +164,9 @@ class Player extends Base {
                 if (callback) {
                     callback();
                 }
-                if (this._setTime > 0) { //  && !this._video.paused
+                if (this._setTime > 0) {
                     this._setTime -= 1;
-                    this._video.currentTime = this._video.seekable.end(this._video.seekable.length - 1);
+                    this._setCurrentTime();
                 }
             })
             .catch(error => {

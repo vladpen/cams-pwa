@@ -16,7 +16,12 @@
 <footer class="bar hidden invisible">
     <section>
         <span class="rwd arrow">
-            <svg viewBox="0 0 73 10"><text x="0" y="9">&larr; &larr; &larr; &larr;</text></svg>
+            <svg viewBox="0 0 75 10">
+                <text x="0" y="9" data-step="-3600">&larr;</text>
+                <text x="20" y="9" data-step="-600">&larr;</text>
+                <text x="40" y="9" data-step="-60">&larr;</text>
+                <text x="60" y="9" data-step="-2">&larr;</text>
+            </svg>
         </span>
         <span>
             <svg class="play big hidden" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -28,8 +33,8 @@
             </svg>
         </span>
         <span class="arch disabled">
-            <input type="range" class="arch-range speed-range hidden" value="5" min="2" max="10" step="1" orient="vertical">
-            <input type="range" class="arch-range motion-range hidden" value="50" min="0" max="90" step="10" orient="vertical">
+            <input type="range" class="range speed-range hidden" value="5" min="2" max="10" step="1" orient="vertical">
+            <input type="range" class="range motion-range hidden" value="50" min="0" max="90" step="10" orient="vertical">
             <svg class="speed big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <polyline points="10,2 6,11 14,9 10,18" fill="none" stroke-width="4" />
             </svg>
@@ -40,7 +45,12 @@
             </svg>
         </span>
         <span class="fwd arrow arch disabled">
-            <svg viewBox="0 0 73 10"><text x="0" y="9">&rarr; &rarr; &rarr; &rarr;</text></svg>
+            <svg viewBox="0 0 75 10">
+                <text x="0" y="9" data-step="1">&rarr;</text>
+                <text x="20" y="9" data-step="60">&rarr;</text>
+                <text x="40" y="9" data-step="600">&rarr;</text>
+                <text x="60" y="9" data-step="3600">&rarr;</text>
+            </svg>
         </span>
     </section>
     <section class="range-box">
