@@ -154,7 +154,7 @@ class Handler(BaseHTTPRequestHandler):
     def _create_auth_cookie(self) -> str:
         return (
             f'auth={self.auth.encrypt(self.auth.info())}; '
-            'Path=/; Max-Age=3456000; Secure; HttpOnly; SameSite=Strict')
+            'Path=/; Max-Age=3456000; Secure; HttpOnly; SameSite=Lax')
 
     def _replace_template(self, template: str, content: bytes) -> bytes:
         content = content.replace('{content}'.encode('UTF-8'), self._get_content(template))

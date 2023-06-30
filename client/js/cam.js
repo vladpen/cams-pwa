@@ -31,7 +31,7 @@ class Cam extends Base {
         this.timeRange.ontouchend = this._onRangeChange;
         this.timeRange.oninput = this._player.onRangeInput;
 
-        if (navigator.userAgentData && navigator.userAgentData.mobile) {
+        if ('userAgentData' in navigator && navigator.userAgentData.mobile) {
             this.speedRange.max = this.MAX_SPEED_MOBILE;
         }
         this.header.onmousedown = this.showBars;

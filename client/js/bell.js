@@ -48,7 +48,7 @@ class Bell {
 
     static _wakeLock = () => {
         if (!'wakeLock' in navigator || !navigator.wakeLock ||
-            (navigator.userAgentData && !navigator.userAgentData.mobile)) {
+            ('userAgentData' in navigator && !navigator.userAgentData.mobile)) {
             return;
         }
         navigator.wakeLock.request('screen').then(wls => {
@@ -80,7 +80,7 @@ class Bell {
 
     static _dimmOn = () => {
         if (!this._btnBell.classList.contains('selected') || this._isPlaying ||
-            (navigator.userAgentData && !navigator.userAgentData.mobile)) {
+            ('userAgentData' in navigator && !navigator.userAgentData.mobile)) {
             return;
         }
         this._dimmOff();

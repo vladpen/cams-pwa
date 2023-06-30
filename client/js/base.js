@@ -19,7 +19,7 @@ class Base {
 
         const vp = window.visualViewport;
         let scale = 1;
-        if (navigator.userAgentData && navigator.userAgentData.mobile) {
+        if ('userAgentData' in navigator && navigator.userAgentData.mobile) {
             scale = window.outerWidth / vp.width;
             this.header.style.transform = 'scale(' + 1 / scale + ')';
             this.footer.style.transform = 'scale(' + 1 / scale + ')';
