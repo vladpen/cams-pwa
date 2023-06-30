@@ -3,9 +3,9 @@ class Player extends Base {
         super();
         this._video = video;
         this._hash = hash;
-        this._liveUrl = '/?live=1&dt={dt}&hash=' + hash;
-        this._rangeUrl = '/?range={range}&dt={dt}&hash=' + hash;
-        this._nextUrl = '/?next={step}&dt={dt}&hash=' + hash;
+        this._liveUrl = '/?video=live&dt={dt}&hash=' + hash;
+        this._rangeUrl = '/?video=range&range={range}&dt={dt}&hash=' + hash;
+        this._nextUrl = '/?video=next&step={step}&dt={dt}&hash=' + hash;
         this._datetime = '';
         this._lock = false;
         this._setTime = 0;
@@ -34,9 +34,6 @@ class Player extends Base {
     }
 
     seek = step => {
-
-        console.log(111, this._playMode, this._progress)
-
         if (this._playMode != 'live' && this._progress) {
             return;
         }

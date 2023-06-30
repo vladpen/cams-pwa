@@ -5,18 +5,11 @@ class Cam extends Base {
         this._days = days;
         const urlParams = new URLSearchParams(window.location.search);
         this._hash = urlParams.get('hash');
-        this._group = urlParams.get('grp');
         this._player = new Player(video, this._hash, camInfo)
     }
 
     run = () => {
-        this.header.querySelector('.back').onclick = () => {
-            if (this._group) {
-                document.location.href = `/?page=group&hash=${group}`;
-            } else {
-                document.location.href = '/';
-            }
-        }
+        this.header.querySelector('.back-btn').onclick = this.back;
         document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;
         document.ontouchmove = e => {
@@ -38,7 +31,7 @@ class Cam extends Base {
         this.timeRange.ontouchend = this._onRangeChange;
         this.timeRange.oninput = this._player.onRangeInput;
 
-        if (navigator.userAgentData.mobile) {
+        if (navigator.userAgentData && navigator.userAgentData.mobile) {
             this.speedRange.max = this.MAX_SPEED_MOBILE;
         }
         this.header.onmousedown = this.showBars;
@@ -68,6 +61,11 @@ class Cam extends Base {
         if (localStorage.getItem('motion_' + this._hash)) {
             this.motionRange.value = localStorage.getItem('motion_' + this._hash);
         }
+        this.header.querySelector('.events-btn').onclick = () => {
+            this.loader.classList.remove('hidden');
+            document.location.replace(`/?page=events&hash=${this._hash}`);
+        }
+        Bell.wakeLock();
     }
 
     _onRangeDown = () => {
@@ -87,10 +85,12 @@ class Cam extends Base {
             if (this.btnSpeed.classList.contains('selected')) {
                 this._video.playbackRate = this.speedRange.value;
             }
+            Bell.wakeLock();
         } else {
-            this._video.play();
+            // this._video.play();
             this._video.pause();
             this.showPlayBtn();
+            Bell.wakeRelease();
         }
     }
 
@@ -139,7 +139,7 @@ class Cam extends Base {
             return;
         }
         this._video.pause();
-        this._player.seek(e.target.dataset.step);
+        this._player.seek(e.target.closest('svg').dataset.step);
         this._setArchMode();
     }
 

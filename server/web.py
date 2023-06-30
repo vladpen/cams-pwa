@@ -10,7 +10,8 @@ from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 from _config import Config
 from auth import Auth
-from files import Files
+from videos import Videos
+from images import Images
 from share import Share
 from log import Log
 
@@ -21,10 +22,10 @@ class Server:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(Config.ssl_certificate, Config.ssl_private_key)
 
-        web_server = ThreadingServer((Config.webServerHost, Config.webServerPort), Handler)
+        web_server = ThreadingServer((Config.web_server_host, Config.web_server_port), Handler)
         web_server.socket = context.wrap_socket(web_server.socket, server_side=True)
 
-        Log.write(f'Serving HTTP on https://{Config.webServerHost}:{Config.webServerPort}/ ...')
+        Log.write(f'Serving HTTP on https://{Config.web_server_host}:{Config.web_server_port}/ ...')
 
         try:
             web_server.serve_forever()
@@ -42,7 +43,7 @@ class ThreadingServer(ThreadingMixIn, HTTPServer):
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         """ Router
-            Possible GET params: ?<page|live|next|range|bell>=<val>[&dt=<dt>]&hash=<hash>[&md=<val>]
+            Possible GET params: ?<page|video|image|bell>=<val>[...]&hash=<hash>[...]
         """
         self._init()
         self._query = parse_qs(urlparse(self.path).query)  # GET params (dict)
@@ -51,10 +52,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_static(self.path)
 
         if not self._query and self.path == '/':
-            return self._send_page('index')
+            return self._send_page()  # index page
 
         if 'bell' in self._query:
-            return self._send_bell(self._query['dt'][0])
+            return self._send_bell()
 
         if 'hash' not in self._query:
             return self._send_error()
@@ -66,19 +67,15 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_error(403)  # Invalid auth
 
         if 'page' in self._query:
-            return self._send_page(self._query['page'][0])
+            return self._send_page()  # authorized page
 
-        self.files = Files(self.hash)
-        date_time = self._query['dt'][0] if 'dt' in self._query else ''
+        if 'video' in self._query:
+            self._videos = Videos(self.hash)
+            return self._send_segment(*self._videos.get(self._query))
 
-        if 'live' in self._query:
-            return self._send_segment(*self.files.get_live(date_time))
-        elif 'range' in self._query:
-            return self._send_segment(*self.files.get_by_range(int(self._query['range'][0])))
-        elif 'next' in self._query:
-            step = int(self._query['next'][0])
-            sensitivity = int(self._query['md'][0]) if 'md' in self._query else -1
-            return self._send_segment(*self.files.get_next(step, date_time, sensitivity))
+        if 'image' in self._query:
+            self._images = Images(self.hash)
+            return self._send_image(*self._images.get(self._query))
 
         self._send_error()  # No valid route found
 
@@ -101,7 +98,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def version_string(self) -> str:
         """Overrides parent method."""
-        return 'Cams PWA'
+        return Config().web_server_name
 
     def _init(self) -> None:
         self.cookie = SimpleCookie()
@@ -135,8 +132,9 @@ class Handler(BaseHTTPRequestHandler):
             Log.write(f"Web: ERROR: can't open static file {static_file} ({repr(e)})")
             self._send_error()
 
-    def _send_page(self, page: str) -> None:
-        if page not in ['index', 'cam', 'group']:
+    def _send_page(self) -> None:
+        page = self._query['page'][0] if self._query else 'index'
+        if page not in ['index', 'cam', 'group', 'events']:
             return self._send_error()
 
         template = f'/{page}.html'
@@ -154,16 +152,25 @@ class Handler(BaseHTTPRequestHandler):
             self._send_error()
 
     def _create_auth_cookie(self) -> str:
-        return f'auth={self.auth.encrypt(self.auth.info())}; Path=/; Max-Age=3456000; Secure; HttpOnly'
+        return (
+            f'auth={self.auth.encrypt(self.auth.info())}; '
+            'Path=/; Max-Age=3456000; Secure; HttpOnly; SameSite=Strict')
 
     def _replace_template(self, template: str, content: bytes) -> bytes:
         content = content.replace('{content}'.encode('UTF-8'), self._get_content(template))
         title = Config.title
 
         cams_list = {}
+        bell_hidden = 'hidden'
         for hash, cam in Config.cameras.items():
             if self.auth.info() == Config.master_cam_hash or self.auth.info() == hash:
-                cams_list[hash] = {'name': cam['name'], 'codecs': cam['codecs'], 'sensitivity': cam['sensitivity']}
+                cams_list[hash] = {
+                    'name': cam['name'],
+                    'codecs': cam['codecs'],
+                    'sensitivity': cam['sensitivity'],
+                    'events': cam['events']}
+                if cam['sensitivity'] or cam['events']:
+                    bell_hidden = ''
 
         if template == '/index.html':
             groups_list = {}
@@ -181,13 +188,16 @@ class Handler(BaseHTTPRequestHandler):
             if self.hash not in cams_list:
                 return ''
             cams_list[self.hash]
-            self.files = Files(self.hash)
+            videos = Videos(self.hash)
             cam = Config.cameras[self.hash]
             title = cam['name']
+            events_hidden = 'hidden' if not cams_list[self.hash]['events'] else ''
             content = content.replace(
-                '{days}'.encode('UTF-8'), json.dumps(self.files.get_days()).encode('UTF-8')
+                '{days}'.encode('UTF-8'), json.dumps(videos.get_days()).encode('UTF-8')
             ).replace(
                 '{cam_info}'.encode('UTF-8'), json.dumps(cams_list[self.hash]).encode('UTF-8')
+            ).replace(
+                '{events_hidden}'.encode('UTF-8'), events_hidden.encode('UTF-8')
             )
         elif template == '/group.html':
             cams = {}
@@ -199,6 +209,19 @@ class Handler(BaseHTTPRequestHandler):
             content = content.replace(
                 '{cams}'.encode('UTF-8'), json.dumps(cams).encode('UTF-8')
             )
+        elif template == '/events.html':
+            if self.hash not in cams_list:
+                return ''
+            cams_list[self.hash]
+            images = Images(self.hash)
+            cam = Config.cameras[self.hash]
+            title = cam['name']
+            content = content.replace(
+                '{cam_info}'.encode('UTF-8'), json.dumps(cams_list[self.hash]).encode('UTF-8')
+            ).replace(
+                '{chart_data}'.encode('UTF-8'), json.dumps(images.get_chart_data()).encode('UTF-8')
+            )
+        content = content.replace('{bell_hidden}'.encode('UTF-8'), bell_hidden.encode('UTF-8'))
         return content.replace('{title}'.encode('UTF-8'), title.encode('UTF-8'))
 
     @staticmethod
@@ -211,7 +234,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send_segment(self, file_path: str, file_size: int) -> None:
         query_date_time = self._query['dt'][0] if 'dt' in self._query else ''
-        file_date_time = self.files.get_datetime_by_path(file_path)
+        file_date_time = self._videos.get_datetime_by_path(file_path)
         try:
             self.send_response(200)
             if file_path and file_size and query_date_time != file_date_time:
@@ -219,7 +242,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Content-Length', str(file_size))
                 self.send_header('Cache-Control', 'no-store')
                 self.send_header('X-Datetime', file_date_time)
-                self.send_header('X-Range', self.files.get_range_by_path(file_path))
+                self.send_header('X-Range', self._videos.get_range_by_path(file_path))
                 self.end_headers()
                 with open(file_path, 'rb') as video_file:
                     self.wfile.write(video_file.read())
@@ -228,10 +251,26 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             Log.write(f'Web: request aborted ({repr(e)})')
 
-    def _send_bell(self, last_date_time) -> None:
+    def _send_image(self, file_path: str, file_size: int, position: str, rng: int) -> None:
+        try:
+            mime_type, _enc = mimetypes.MimeTypes().guess_type(file_path)
+            self.send_response(200)
+            self.send_header('Content-Type', mime_type)
+            self.send_header('Content-Length', str(file_size))
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('X-Range', rng)
+            self.send_header('X-Position', position)
+            self.end_headers()
+            with open(file_path, 'rb') as video_file:
+                self.wfile.write(video_file.read())
+        except Exception as e:
+            Log.write(f'Web: request aborted ({repr(e)})')
+
+    def _send_bell(self) -> None:
         if not self.auth.info():
             return self._send_error(403)
 
+        last_date_time = self._query['dt'][0]
         prev_motions = Share.cam_motions.copy()
         cnt = 0
         time.sleep(1)

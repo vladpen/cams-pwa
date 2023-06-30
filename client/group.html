@@ -1,21 +1,25 @@
 <header class="bar hidden invisible">
-    <svg class="back" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <polyline points="11,1 1,10 11,19 1,10 19,10" fill="none" stroke-width="2" />
+    <svg class="back-btn link" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="11,1 1,10 11,19 1,10 19,10" fill="none" stroke-width="2"/>
     </svg>
     <span class="title">{title}</span>
     <span class="loader"></span>
-    <svg class="bell-btn" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="m10,21h4c0,3-4,3-4,0z M3,18 5,16 V10 C5,7 8,4 11,3 V2 c0,-1 2,-1 2,0 v1 c3,1 6,3 6,7 v6 l 2,2 c-2,0 -16,0-18,0z"/>
-    </svg>
 </header>
 <main class="fit-height">
     <div class="group-box"></div>
 </main>
 <footer class="bar hidden invisible">
     <section>
-        <svg class="big play" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <polygon points="1,1 19,10 1,19" />
-        </svg>
+        <span class="center">
+            <svg class="play big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="2,2 18,10 2,18" stroke-width="4"/>
+            </svg>
+        </span>
+        <span>
+            <svg class="bell-btn {bell_hidden}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="m10,21h4c0,3-4,3-4,0z M3,18 5,16 V10 C5,7 8,4 11,3 V2 c0,-1 2,-1 2,0 v1 c3,1 6,3 6,7 v6 l 2,2 c-2,0 -16,0-18,0z"/>
+            </svg>
+        </span>
     </section>
 </footer>
 
@@ -27,7 +31,4 @@
     const group = new Group({cams});
     group.run();
     Bell.run();
-    if ('wakeLock' in navigator) {
-        navigator.wakeLock.request('screen');
-    }
 </script>

@@ -18,6 +18,7 @@ class Config:
             'codecs': '',
             'storage_command': '',
             'sensitivity': 1.5,
+            'events': False,
         },
     }
 
@@ -35,8 +36,9 @@ class Config:
     # Useful for multiple app instances accessed over a local network and the web
     web_title = 'Cams'
 
-    webServerHost = '0.0.0.0'
-    webServerPort = 8000
+    web_server_host = '0.0.0.0'
+    web_server_port = 8000
+    web_server_name = 'Cams PWA'
 
     master_cam_hash = 'master cam hash'
     # Use hashlib.sha256(b"my_secret_password").hexdigest() to encode "my_secret_password"
@@ -71,9 +73,15 @@ class Config:
         '-segment_format_options movflags=frag_keyframe+empty_moov+default_base_moof '
         '-reset_timestamps 1 -strftime 1 {cam_path}/%Y-%m-%d/%H/%M/%S.mp4')
 
-    storage_period_days = 14
+    storage_period_days = 3
+
+    # Root folder for FTP user
+    events_path = '/<path>'
+
+    events_period_days = 30
 
     # Debug options
     debug = False
     storage_enabled = True
+    events_enabled = True
     web_enabled = True

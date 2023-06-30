@@ -1,12 +1,16 @@
 class Bell {
-    static run = (hash) => {
+    static run = () => {
+        this._btnBell = document.querySelector('footer .bell-btn');
+        if (this._btnBell.classList.contains('hidden')) {
+            return;
+        }
         this._audio = new Audio('/bell.mp3');
-        this._wakeLock = null;
-        this._fetchTimerID;
-        this._dimmTimerID;
+        this._fetchTimeoutId;
+        this._dimmTimeoutId;
         this._lastDateTime = '0';
         this._modal = document.querySelector('.modal');
-        this._btnBell = document.querySelector('header .bell-btn');
+        this._abortController;
+        this._pending = false;
 
         if (localStorage.getItem('bell')) {
             this._toggleBtn();
@@ -16,51 +20,77 @@ class Bell {
         window.onclick = e => {
             this._modal.classList.add('hidden');
             this._dimmOff();
-            if (e.target.tagName != 'A') {
+            if (e.target.tagName == 'A' || e.target.closest('.link')) {
+                this._pending = true;
+                if (this._abortController) {
+                    this._abortController.abort();
+                }
+            } else {
                 this._dimmOn();
             }
         }
-        window.onorientationchange = this._dimmOn;
+        screen.orientation.onchange = this._dimmOn;
+    }
+
+    static wakeLock = () => {
+        this._wakeLock();
+        this._dimmOff();
+        this._isPlaying = true;
+    }
+
+    static wakeRelease = () => {
+        if (this._wakeLockSentinel && !this._btnBell.classList.contains('selected')) {
+            this._wakeLockSentinel.release();
+        }
+        this._dimmOn();
+        this._isPlaying = false; // playing is off
+    }
+
+    static _wakeLock = () => {
+        if (!'wakeLock' in navigator || !navigator.wakeLock ||
+            (navigator.userAgentData && !navigator.userAgentData.mobile)) {
+            return;
+        }
+        navigator.wakeLock.request('screen').then(wls => {
+            this._wakeLockSentinel = wls;
+        });
     }
 
     static _toggleBtn= () => {
         if (this._btnBell.classList.contains('selected')) {
             this._btnBell.classList.remove('selected');
-            if (this._wakeLock) {
-                this._wakeLock.release().then(() => {
-                    this._wakeLock = null;
-                });
-            }
             localStorage.setItem('bell', '');
             this._dimmOff();
+            if (this._wakeLockSentinel && !this._isPlaying) {
+                this._wakeLockSentinel.release();
+            }
         } else {
             this._btnBell.classList.add('selected');
-            if ('wakeLock' in navigator) {
-                navigator.wakeLock.request('screen').then(wakeLock => {
-                    this._wakeLock = wakeLock;
-                });
-            }
             localStorage.setItem('bell', '1');
             this._fetch();
             this._dimmOn();
+            this._wakeLock();
         }
     }
 
     static _dimmOff = () => {
-        clearTimeout(this._dimmTimerID);
+        clearTimeout(this._dimmTimeoutId);
         document.body.classList.remove('dimmed');
     }
 
     static _dimmOn = () => {
-        if (!navigator.userAgentData.mobile || !this._btnBell.classList.contains('selected')) {
+        if (!this._btnBell.classList.contains('selected') || this._isPlaying ||
+            (navigator.userAgentData && !navigator.userAgentData.mobile)) {
             return;
         }
         this._dimmOff();
         if (this._btnBell.classList.contains('selected')) {
-            clearTimeout(this._dimmTimerID);
-            this._dimmTimerID = window.setTimeout(() => {
-                document.body.classList.add('dimmed');
-            }, 20000);
+            clearTimeout(this._dimmTimeoutId);
+            this._dimmTimeoutId = window.setTimeout(() => {
+                if (!this._isPlaying) {
+                    document.body.classList.add('dimmed');
+                }
+            }, 30000);
         }
     }
 
@@ -78,16 +108,20 @@ class Bell {
     }
 
     static _fetch = () => {
-        clearTimeout(this._fetchTimerID);
+        clearTimeout(this._fetchTimeoutId);
         if (!this._btnBell.classList.contains('selected')) {
             return;
         }
-        fetch(`/?bell=1&dt=${this._lastDateTime}`, { cache: 'no-store' })
+        this._abortController = new AbortController();
+        fetch(`/?bell=1&dt=${this._lastDateTime}`, {
+            cache: 'no-store',
+            signal: this._abortController.signal
+        })
             .then(r => {
                 return r.json();
             })
             .then(data => {
-                this._fetchTimerID = window.setTimeout(this._fetch);
+                this._fetchTimeoutId = window.setTimeout(this._fetch);
                 if (!Object.keys(data).length || !this._btnBell.classList.contains('selected')) {
                     return
                 }
@@ -110,9 +144,10 @@ class Bell {
                 this._modal.classList.remove('hidden');
                 document.body.classList.add('dimmed');
             })
-            .catch(e => {
-                console.error('Bell error:', e)
-                this._fetchTimerID = window.setTimeout(this._fetch, 10000);
+            .catch(() => {
+                if (!this._pending) {
+                    this._fetchTimeoutId = window.setTimeout(this._fetch, 10000);
+                }
             });
     }
 }

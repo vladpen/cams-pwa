@@ -8,14 +8,14 @@ class Group extends Base {
         const box = document.querySelector('.group-box');
         for (let hash in this._cams) {
             const frame = document.createElement('div');
-            frame.classList.add('video-box');
+            frame.classList.add('video-box', 'link');
             const video = document.createElement('video');
             frame.append(video);
             box.append(frame);
 
             frame.onclick = () => {
-                const urlParams = new URLSearchParams(window.location.search);
-                document.location.href = `/?page=cam&hash=${hash}&grp=${urlParams.get('hash')}`;
+                this.loader.classList.remove('hidden');
+                document.location.href = `/?page=cam&hash=${hash}`;
                 let overlay = document.createElement('div');
                 frame.append(overlay);
             }
@@ -26,9 +26,19 @@ class Group extends Base {
         document.onscroll = this.hideBars;
         document.ontouchmove = this.hideBars;
 
-        this.header.querySelector('.back').onclick = () => {
+        this.header.querySelector('.back-btn').onclick = () => {
+            this.loader.classList.remove('hidden');
             document.location.href = '/';
         }
+        this.header.onmousedown = this.showBars;
+        this.header.ontouchstart = this.showBars;
+        this.header.onmouseup = this.fadeBars;
+        this.header.ontouchend = this.fadeBars;
+        this.footer.onmousedown = this.showBars;
+        this.footer.ontouchstart = this.showBars;
+        this.footer.onmouseup = this.fadeBars;
+        this.footer.ontouchend = this.fadeBars;
+
         window.onresize = this._onResize;
         this._onResize();
 
@@ -37,8 +47,11 @@ class Group extends Base {
             for (const video of document.querySelectorAll('video')) {
                 video.play();
             }
-            this.footer.remove();
+            this.btnPlay.classList.add('hidden');
         }
+        const urlParams = new URLSearchParams(window.location.search);
+        sessionStorage.setItem('group_hash', urlParams.get('hash'));
+        Bell.wakeLock();
     }
 
     _onResize = () => {

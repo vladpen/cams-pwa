@@ -19,7 +19,7 @@ class Base {
 
         const vp = window.visualViewport;
         let scale = 1;
-        if (navigator.userAgentData.mobile) {
+        if (navigator.userAgentData && navigator.userAgentData.mobile) {
             scale = window.outerWidth / vp.width;
             this.header.style.transform = 'scale(' + 1 / scale + ')';
             this.footer.style.transform = 'scale(' + 1 / scale + ')';
@@ -29,8 +29,10 @@ class Base {
         this.footer.style.left = vp.pageLeft + 'px';
         this.footer.style.top = vp.pageTop + vp.height - (this.footer.offsetHeight + 1) / scale + 'px';
 
-        if (this.timeRange) {
+        if (this.speedRange) {
             this.speedRange.classList.add('hidden');
+        }
+        if (this.motionRange) {
             this.motionRange.classList.add('hidden');
         }
         this.fadeBars();
@@ -65,6 +67,16 @@ class Base {
         this.btnPlay.classList.add('hidden');
         if (this.btnPause) {
             this.btnPause.classList.remove('hidden');
+        }
+    }
+
+    back = () => {
+        this.loader.classList.remove('hidden');
+        const group_hash = sessionStorage.getItem('group_hash');
+        if (group_hash) {
+            document.location.href = `/?page=group&hash=${group_hash}`;
+        } else {
+            document.location.href = '/';
         }
     }
 }

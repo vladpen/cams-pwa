@@ -7,7 +7,7 @@ from _config import Config
 from log import Log
 
 
-class Files:
+class Videos:
     MAX_RANGE = 2000
     DT_ROOT_FORMAT = '%Y-%m-%d'
     DT_FORMAT = '%Y-%m-%d/%H/%M'
@@ -23,10 +23,37 @@ class Files:
         self._root_folder = []
         self._date_time = ''
 
-    def get_days(self):
+    def get_days(self) -> int:
         return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
 
-    def get_live(self, date_time: Optional[str] = '') -> Tuple[str, int]:
+    def get(self, args: List[Any]) -> Tuple[str, int]:
+        date_time = args['dt'][0] if 'dt' in args else ''
+
+        if args['video'][0] == 'next':
+            step = int(args['step'][0]) if 'step' in args else 0
+            sensitivity = int(args['md'][0]) if 'md' in args else -1
+            return self._get_next(step, date_time, sensitivity)
+
+        elif args['video'][0] == 'range':
+            rng = int(args['range'][0]) if 'range' in args else self.MAX_RANGE
+            return self._get_by_range(rng)
+
+        return self._get_live(date_time)
+
+    def get_datetime_by_path(self, path: str) -> str:
+        return re.sub(r'(-|/|.mp4)', '', path[len(self._cam_path) + 1:])
+
+    def get_range_by_path(self, path: str) -> str:
+        if self._range > self.MAX_RANGE:
+            return self._range
+        start_date = self._get_start_date()
+        delta_seconds = (
+            datetime.strptime(self.get_datetime_by_path(path), self.DT_WEB_FORMAT) - start_date
+        ).total_seconds()
+        total_seconds = (datetime.now() - start_date).total_seconds()
+        return str(round(self.MAX_RANGE * delta_seconds / total_seconds))
+
+    def _get_live(self, date_time: Optional[str] = '') -> Tuple[str, int]:
         self._range = self.MAX_RANGE + 1
 
         path, size = self._get_live_file()  # checks now and last minute folder
@@ -39,9 +66,9 @@ class Files:
             return path, size
 
         time.sleep(0.5)
-        return self.get_live(date_time)
+        return self._get_live(date_time)
 
-    def get_by_range(self, rng: int) -> Tuple[str, int]:
+    def _get_by_range(self, rng: int) -> Tuple[str, int]:
         rng = min(max(rng, 0), self.MAX_RANGE)
 
         start_date = self._get_start_date()
@@ -52,9 +79,9 @@ class Files:
         parts = wd.split('/')
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], 1)
 
-    def get_next(self, step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
+    def _get_next(self, step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
         if not date_time:
-            return self.get_live()
+            return self._get_live()
 
         self._date_time = date_time
 
@@ -96,24 +123,11 @@ class Files:
         ).strftime(self.DT_FORMAT)
 
         if step > 0 and folder > datetime.now().strftime(self.DT_FORMAT):
-            return self.get_live(date_time)
+            return self._get_live(date_time)
 
         step = -2 if step < 0 else 1
         parts = folder.split('/')
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)
-
-    def get_datetime_by_path(self, path: str) -> str:
-        return re.sub(r'(-|/|.mp4)', '', path[len(self._cam_path) + 1:])
-
-    def get_range_by_path(self, path: str) -> str:
-        if self._range > self.MAX_RANGE:
-            return self._range
-        start_date = self._get_start_date()
-        delta_seconds = (
-            datetime.strptime(self.get_datetime_by_path(path), self.DT_WEB_FORMAT) - start_date
-        ).total_seconds()
-        total_seconds = (datetime.now() - start_date).total_seconds()
-        return str(round(self.MAX_RANGE * delta_seconds / total_seconds))
 
     def _get_start_date(self) -> datetime:
         return datetime.strptime(self._get_folders()[0], self.DT_ROOT_FORMAT)
@@ -147,7 +161,7 @@ class Files:
             elif step < 0:
                 return self._find_nearest_file('', '', 1)  # move to the beginning
             else:
-                return self.get_live()  # move to the end
+                return self._get_live()  # move to the end
 
         if not folder and folders and len(parts) < self.DEPTH:
             parts.append(folders[-1]) if step < 0 else parts.append(folders[0])
@@ -182,7 +196,7 @@ class Files:
         files = self._get_files(folder)
         if not files:
             if sign > 0 and folder >= self._get_folders()[-1]:
-                return self.get_live()
+                return self._get_live()
             if sign < 0 and folder <= self._get_folders()[0]:
                 return '', 0
 
@@ -216,7 +230,7 @@ class Files:
                 return f'{self._cam_path}/{folder}/{f[1]}', int(f[0])
 
         if folder >= datetime.now().strftime(self.DT_FORMAT):
-            return self.get_live()
+            return self._get_live()
 
         next_folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
         return self._motion_detector(next_folder, last_files, sensitivity, sign)

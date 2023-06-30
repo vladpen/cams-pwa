@@ -1,0 +1,84 @@
+<header class="bar hidden invisible events">
+    <svg class="back-btn link" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="11,1 1,10 11,19 1,10 19,10" fill="none" stroke-width="2"/>
+    </svg>
+    <span class="title">{title}</span>
+    <span class="loader"></span>
+    <svg class="events-btn link" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="28" rx="3" ry="3" height="28" fill="none" stroke-width="2"/>
+        <polyline points="2,28 11,17 20,23 29,10" fill="none" stroke-width="2"/>
+        <circle cx="11" cy="10" r="2"/>
+    </svg>
+</header>
+<main class="fit-height events">
+    <div class="image-box">
+        <img/>
+    </div>
+</main>
+<footer class="bar hidden invisible">
+    <section class="chart">
+        <svg xmlns="http://www.w3.org/2000/svg"></svg>
+    </section>
+    <section>
+        <span class="center">
+            <span class="rwd">
+                <span class="arrow">
+                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-100">
+                        <polyline points="8,4 1,10 8,16 1,10 19,10"/>
+                    </svg>
+                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-10">
+                        <polyline points="6,6 1,10 6,14 1,10 19,10"/>
+                    </svg>
+                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-1">
+                        <polyline points="4,8 1,10 4,12 1,10 19,10"/>
+                    </svg>
+                </span>
+            </span>
+            <span class="fwd disabled">
+                <span>
+                    <svg class="play big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="2,2 18,10 2,18" stroke-width="4"/>
+                    </svg>
+                    <svg class="pause big hidden" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="4" y1="3" x2="4" y2="17" stroke-width="6"/>
+                        <line x1="15" y1="3" x2="15" y2="17" stroke-width="6"/>
+                    </svg>
+                </span>
+                <span class="arch">
+                    <input type="range" class="range speed-range hidden" value="5" min="2" max="10" step="1" orient="vertical">
+                    <svg class="speed big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <polyline points="10,2 6,11 14,9 10,18" fill="none" stroke-width="4"/>
+                    </svg>
+                </span>
+                <span class="arrow">
+                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="1">
+                        <polyline points="1,10 19,10 16,8 19,10 16,12"/>
+                    </svg>
+                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="10">
+                        <polyline points="1,10 19,10 14,6 19,10 14,14"/>
+                    </svg>
+                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="100">
+                        <polyline points="1,10 19,10 12,4 19,10 12,16"/>
+                    </svg>
+                </span>
+            </span>
+        </span>
+        <span>
+            <svg class="bell-btn {bell_hidden}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="m10,21h4c0,3-4,3-4,0z M3,18 5,16 V10 C5,7 8,4 11,3 V2 c0,-1 2,-1 2,0 v1 c3,1 6,3 6,7 v6 l 2,2 c-2,0 -16,0-18,0z"/>
+            </svg>
+        </span>
+    </section>
+    <section class="range-box">
+        <input type="range" class="time-range" value="2000" min="0" max="2000">
+    </section>
+</footer>
+<script src="/js/base.js"></script>
+<script src="/js/slider.js"></script>
+<script src="/js/events.js"></script>
+<script src="/js/bell.js"></script>
+<script>
+    const events = new Events(document.querySelector('.image-box img'), {cam_info}, {chart_data});
+    events.run();
+    Bell.run();
+</script>

@@ -1,13 +1,12 @@
 import asyncio
 from datetime import datetime, timedelta
 from _config import Config
-from files import Files
+from videos import Videos
 from share import Share
 from log import Log
 
 
 class Storage:
-    CLEANUP_HOUR_MINUTE = '0000'
     DT_ROOT_FORMAT = '%Y-%m-%d'
     DT_FORMAT = '%Y-%m-%d/%H/%M'
 
@@ -15,7 +14,8 @@ class Storage:
         self._hash = camera_hash
         self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}'
         self._start_time = None
-        self._files = Files(self._hash)
+        self._last_rotation_date = ''
+        self._videos = Videos(self._hash)
 
     async def run(self) -> None:
         """ Start fragments saving
@@ -72,8 +72,8 @@ class Storage:
         if not self._start_time:
             return
 
-        prev_dir = f'{self._cam_path}/{(datetime.now() - timedelta(minutes=1)).strftime(self._files.DT_FORMAT)}'
-        working_dir = f'{self._cam_path}/{datetime.now().strftime(self._files.DT_FORMAT)}'
+        prev_dir = f'{self._cam_path}/{(datetime.now() - timedelta(minutes=1)).strftime(self._videos.DT_FORMAT)}'
+        working_dir = f'{self._cam_path}/{datetime.now().strftime(self._videos.DT_FORMAT)}'
         cmd = f'ls -l {prev_dir}/* {working_dir}/* | awk ' + "'{print $5,$9}'"
         p = await asyncio.create_subprocess_shell(
             cmd,
@@ -115,7 +115,7 @@ class Storage:
         cnt = 0
         for file in file_list[:-1]:
             f = file.split(' ')
-            if int(f[0]) <= self._files.MIN_FILE_SIZE:
+            if int(f[0]) <= self._videos.MIN_FILE_SIZE:
                 continue
             total_size += int(f[0])
             cnt += 1
@@ -126,11 +126,11 @@ class Storage:
         average_size = total_size / cnt
 
         if float(last_file[0]) > average_size * cfg['sensitivity']:
-            date_time = self._files.get_datetime_by_path(last_file[1])
+            date_time = self._videos.get_datetime_by_path(last_file[1])
             if self._hash in Share.cam_motions and Share.cam_motions[self._hash] >= date_time:
                 return
             Share.cam_motions[self._hash] = date_time
-            Log.write(f'Storage: motion detected: {date_time} {self._hash}')
+            Log.print(f'Storage: motion detected: {date_time} {self._hash}')
 
     async def _remove_folder_if_empty(self, folder) -> None:
         path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}/{folder}'
@@ -141,10 +141,12 @@ class Storage:
             Log.write(f'Storage: watchdog: folder {folder} removed from {self._hash}')
 
     async def _cleanup(self) -> None:
-        """ Cleanup (5 times per day - 00:00 ... 04:00)
+        """ Cleanup (once a day)
         """
-        if datetime.now().strftime('%M') != '00' or datetime.now().strftime('%H') > '04':
+        now_date = datetime.now().strftime(self.DT_ROOT_FORMAT)
+        if self._last_rotation_date and self._last_rotation_date == now_date:
             return
+        self._last_rotation_date = now_date
 
         cmd = f'ls -d {self._cam_path}/*'
         p = await asyncio.create_subprocess_shell(
@@ -155,13 +157,11 @@ class Storage:
         if not stdout:
             return
 
-        oldest_dir_name = (
-            datetime.now() - timedelta(days=Config.storage_period_days + 1)
-        ).strftime(self.DT_ROOT_FORMAT)
+        oldest_folder = (datetime.now() - timedelta(days=Config.storage_period_days)).strftime(self.DT_ROOT_FORMAT)
 
         for row in stdout.decode().strip().split('\n'):
             wd = row.split('/')[-1]
-            if wd >= oldest_dir_name or not wd:
+            if wd >= oldest_folder or not wd:
                 break
             cmd = f'rm -rf {self._cam_path}/{wd}'
             p = await asyncio.create_subprocess_shell(cmd)
