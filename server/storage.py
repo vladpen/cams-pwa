@@ -133,7 +133,7 @@ class Storage:
             Log.print(f'Storage: motion detected: {date_time} {self._hash}')
 
     async def _remove_folder_if_empty(self, folder) -> None:
-        path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}/{folder}'
+        path = f'{self._cam_path}/{folder}'
         cmd = f'rmdir {path}'
         p = await asyncio.create_subprocess_shell(cmd)
         res = await p.wait()  # returns 0 if success, else 1

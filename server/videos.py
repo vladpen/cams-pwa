@@ -18,7 +18,7 @@ class Videos:
 
     def __init__(self, cam_hash: str):
         self._hash = cam_hash
-        self._cam_path = f'{Config.storage_path}/{Config.cameras[cam_hash]["folder"]}'
+        self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}'
         self._range = self.MAX_RANGE
         self._root_folder = []
         self._date_time = ''

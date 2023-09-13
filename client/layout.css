@@ -42,8 +42,7 @@ header {display: flex; font-size: 1.2em;}
 header .back-btn, header .title, footer {background: rgba(0, 0, 0, 0.2);}
 header .title {align-items: center; padding-right: 0.3em;}
 header.events .title {color: #f74;}
-header .events-btn {margin-left: auto;}
-header.events .events-btn rect {fill: #c70;}
+header .link-btn {margin-left: auto;}
 footer {display: grid; font-size: 1.2em;}
 footer section {display: flex; align-items: center; white-space: nowrap;}
 footer .time-range {

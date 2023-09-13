@@ -61,7 +61,7 @@ class Cam extends Base {
         if (localStorage.getItem('motion_' + this._hash)) {
             this.motionRange.value = localStorage.getItem('motion_' + this._hash);
         }
-        this.header.querySelector('.events-btn').onclick = () => {
+        this.header.querySelector('.link-btn').onclick = () => {
             this.loader.classList.remove('hidden');
             document.location.replace(`/?page=events&hash=${this._hash}`);
         }
