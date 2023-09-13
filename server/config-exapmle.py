@@ -50,20 +50,30 @@ class Config:
 
     # Path to VALID ssl certificates.
     # Use any service likes https://letsencrypt.org/
-    # or create self-signed certificate, then import root one to your browser.
+    # or create self-signed certificates, then import root one to your browser
+    # (see README.md for details).
     ssl_certificate = '/<path>/_localhost.crt'
     ssl_private_key = '/<path>/_localhost.key'
 
     # Check "storage_command" output, secs (int).
-    # Used as the storage watchdog interval and motion detector interval
+    # Used as the storage watchdog interval and motion detector one
     min_segment_duration = 4
 
-    # Run this script with root permissions or set up log rotation yourself
-    log_file = '/var/log/cams-pwa.log'
+    # Create the cams-pwa folder in /var/log directory,
+    # assign access rights (chown/chmod) to user "www_user" (see "Unit" section in README.md)
+    # and check logrotate rules,
+    # or just run main.py script with root permissions
+    log_file = '/var/log/cams-pwa/cams-pwa.log'
 
+    # Storage video files root folder
     # Attention!
     # All files and subdirectories older than "storage_period_days" in this folder will be deleted!
     storage_path = '/<path>'
+
+    # Event images (motion detection) root folder
+    # Root folder for cameras FTP user must be events_path
+    # All files and subdirectories older than events_period_days in this folder will be deleted!
+    events_path = '/<path>'
 
     # {url} = cameras.hash.url
     # {cam_path} = storage_path/cameras.hash.folder
@@ -74,10 +84,6 @@ class Config:
         '-reset_timestamps 1 -strftime 1 {cam_path}/%Y-%m-%d/%H/%M/%S.mp4')
 
     storage_period_days = 3
-
-    # Root folder for FTP user
-    events_path = '/<path>'
-
     events_period_days = 30
 
     # Debug options
