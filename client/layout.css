@@ -32,7 +32,6 @@ header svg, footer svg {
 .arrow svg {max-width: 100%; padding: 0.5em 0.3em;}
 .arrow svg text {font-size: 15px;}
 svg.big {height: 1.2em; padding: 0.4em;}
-svg.bell-btn {stroke-width: 2px; fill: none;}
 svg.selected {stroke: #fa0; fill: #fa0;}
 .disabled svg {cursor: default; filter: opacity(0.3);}
 
@@ -61,6 +60,9 @@ footer .arrow polyline {stroke-width: 2; fill: none;}
 footer .chart {position: absolute; height: 100%; width: 100%; z-index: -1;}
 footer .chart svg {height: 100%; width: 100%; padding: 0;}
 footer .chart rect {stroke: none; fill: rgba(255, 255, 255, 0.2); transition: all 0.5s ease-in-out;}
+footer i {height: 2em; width: 2em; display: inline-flex; cursor: pointer; transition: all 0.1s ease-in-out;}
+i.bell-btn {background-image: url('/img/belloff.svg'); background-size: 1em 1em; background-position: center; background-repeat: no-repeat;}
+i.bell-btn.selected {background-image: url('/img/bell.svg');}
 .nav {list-style-type: none; margin: auto; padding: 0;}
 .nav li {padding: 0.5em 2em;}
 .nav li a {color: white; text-decoration: none; font-size: 1.2em; white-space: nowrap;}
