@@ -61,7 +61,7 @@ footer .chart {position: absolute; height: 100%; width: 100%; z-index: -1;}
 footer .chart svg {height: 100%; width: 100%; padding: 0;}
 footer .chart rect {stroke: none; fill: rgba(255, 255, 255, 0.2); transition: all 0.5s ease-in-out;}
 footer i {height: 2em; width: 2em; display: inline-flex; cursor: pointer; transition: all 0.1s ease-in-out;}
-i.bell-btn {background-image: url('/img/belloff.svg'); background-size: 1em 1em; background-position: center; background-repeat: no-repeat;}
+i.bell-btn {background-image: url('/img/bell_off.svg'); background-size: 1em 1em; background-position: center; background-repeat: no-repeat;}
 i.bell-btn.selected {background-image: url('/img/bell.svg');}
 .nav {list-style-type: none; margin: auto; padding: 0;}
 .nav li {padding: 0.5em 2em;}

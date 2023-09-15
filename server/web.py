@@ -115,7 +115,7 @@ class Handler(BaseHTTPRequestHandler):
         return 'web'
 
     def _send_static(self, static_file: str) -> None:
-        if not re.search(r'^/([a-z]+/)*[a-z\d\.]+$', static_file):
+        if not re.search(r'^/([a-z]+/)*[a-z\d\._]+$', static_file):
             return self._send_error()
         try:
             with open(f'{os_path.dirname(os_path.realpath(__file__))}/../client{static_file}', 'rb') as file:
