@@ -103,9 +103,9 @@ class Storage:
 
         # Remove previous folders if empty
         prev_min = datetime.now() - timedelta(minutes=1)
-        if (await self._remove_folder_if_empty(prev_min.strftime(self.DT_FORMAT)) != 0):
+        if not await self._remove_folder_if_empty(prev_min.strftime(self.DT_FORMAT)):
             return
-        if (await self._remove_folder_if_empty(prev_min.strftime(f'{self.DT_ROOT_FORMAT}/%H')) != 0):
+        if not await self._remove_folder_if_empty(prev_min.strftime(f'{self.DT_ROOT_FORMAT}/%H')):
             return
         await self._remove_folder_if_empty(prev_min.strftime(self.DT_ROOT_FORMAT))
 
@@ -134,14 +134,25 @@ class Storage:
             Share.cam_motions[self._hash] = date_time
             Log.print(f'Storage: motion detected: {date_time} {self._hash}')
 
-    async def _remove_folder_if_empty(self, folder) -> int:
+    async def _remove_folder_if_empty(self, folder) -> bool:
         path = f'{self._cam_path}/{folder}'
+
+        cmd = f'ls -A {path}'
+        p = await asyncio.create_subprocess_shell(
+            cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        stdout, _stderr = await p.communicate()
+        if stdout:
+            return False  # not empty
+
         cmd = f'rmdir {path}'
         p = await asyncio.create_subprocess_shell(cmd)
         res = await p.wait()  # returns 0 if success (folder was empty, removed), else 1
         if res == 0:
             Log.write(f'Storage: watchdog: folder {folder} removed from {self._hash}')
-        return res
+            return True
+        return False
 
     async def _cleanup(self) -> None:
         """ Cleanup (once a day)
