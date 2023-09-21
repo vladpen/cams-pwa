@@ -45,7 +45,7 @@ class Storage:
         self._start_time = datetime.now()
         await asyncio.sleep(0.1)
 
-        Log.write(f'Storage:{caller} start main process {self.main_process.pid} for {self._hash}')
+        Log.write(f'Storage: {caller} start main process {self.main_process.pid} for {self._hash}')
 
     async def _mkdir(self, folder: str) -> None:
         """ Create storage folder if not exists
@@ -103,8 +103,10 @@ class Storage:
 
         # Remove previous folders if empty
         prev_min = datetime.now() - timedelta(minutes=1)
-        await self._remove_folder_if_empty(prev_min.strftime(self.DT_FORMAT))
-        await self._remove_folder_if_empty(prev_min.strftime(f'{self.DT_ROOT_FORMAT}/%H'))
+        if (await self._remove_folder_if_empty(prev_min.strftime(self.DT_FORMAT)) != 0):
+            return
+        if (await self._remove_folder_if_empty(prev_min.strftime(f'{self.DT_ROOT_FORMAT}/%H')) != 0):
+            return
         await self._remove_folder_if_empty(prev_min.strftime(self.DT_ROOT_FORMAT))
 
     def _live_motion_detector(self, file_list) -> None:
@@ -132,13 +134,14 @@ class Storage:
             Share.cam_motions[self._hash] = date_time
             Log.print(f'Storage: motion detected: {date_time} {self._hash}')
 
-    async def _remove_folder_if_empty(self, folder) -> None:
+    async def _remove_folder_if_empty(self, folder) -> int:
         path = f'{self._cam_path}/{folder}'
         cmd = f'rmdir {path}'
         p = await asyncio.create_subprocess_shell(cmd)
-        res = await p.wait()  # returns 0 if success, else 1
+        res = await p.wait()  # returns 0 if success (folder was empty, removed), else 1
         if res == 0:
             Log.write(f'Storage: watchdog: folder {folder} removed from {self._hash}')
+        return res
 
     async def _cleanup(self) -> None:
         """ Cleanup (once a day)
