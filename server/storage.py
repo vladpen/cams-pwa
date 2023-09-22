@@ -182,3 +182,5 @@ class Storage:
             await p.wait()
 
             Log.write(f'Storage: cleanup: remove {self._hash} {wd}')
+
+            # todo: remove unfinished (low sized) files & daily empty folders

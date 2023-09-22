@@ -1,5 +1,6 @@
 class Base {
     ASPECT_RATIO = 16 / 9;
+    MAX_SPEED_DESKTOP = 10;
     MAX_SPEED_MOBILE = 3;
     MAX_RANGE = 2000;
 

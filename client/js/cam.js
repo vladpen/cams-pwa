@@ -33,6 +33,8 @@ class Cam extends Base {
 
         if ('userAgentData' in navigator && navigator.userAgentData.mobile) {
             this.speedRange.max = this.MAX_SPEED_MOBILE;
+        } else {
+            this.speedRange.max = this.MAX_SPEED_DESKTOP;
         }
         this.header.onmousedown = this.showBars;
         this.header.ontouchstart = this.showBars;
@@ -50,6 +52,7 @@ class Cam extends Base {
         this.btnSpeed.onclick = this._toggleSpeed;
 
         this.speedRange.onchange = () => {
+            this._setPlaybackRate();
             localStorage.setItem('speed_' + this._hash, this.speedRange.value);
         };
         this.motionRange.onchange = () => {
@@ -82,9 +85,7 @@ class Cam extends Base {
         if (!this.btnPlay.classList.contains('hidden')) {
             this._video.play();
             this.showPauseBtn();
-            if (this.btnSpeed.classList.contains('selected')) {
-                this._video.playbackRate = this.speedRange.value;
-            }
+            this._setPlaybackRate();
             Bell.wakeLock();
         } else {
             // this._video.play();
@@ -151,5 +152,11 @@ class Cam extends Base {
         }
         this.header.querySelector('.loader').classList.remove('hidden');
         document.body.classList.add('arch');
+    }
+
+    _setPlaybackRate = () => {
+        if (this.btnSpeed.classList.contains('selected')) {
+            this._video.playbackRate = this.speedRange.value;
+        }
     }
 }
