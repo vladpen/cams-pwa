@@ -7,7 +7,7 @@ class Bell {
         this._audio = new Audio('/bell.mp3');
         this._fetchTimeoutId;
         this._dimmTimeoutId;
-        this._lastDateTime = '0';
+        this._lastDateTime = 0;
         this._modal = document.querySelector('.modal');
         this._abortController;
         this._pending = false;
@@ -63,6 +63,9 @@ class Bell {
             this._dimmOff();
             if (this._wakeLockSentinel && !this._isPlaying) {
                 this._wakeLockSentinel.release();
+            }
+            if (this._abortController) {
+                this._abortController.abort();
             }
         } else {
             this._btnBell.classList.add('selected');
@@ -130,7 +133,8 @@ class Bell {
                     if (row.dt <= this._lastDateTime) {
                         return;  // continue forEach
                     }
-                    const hm = row.dt.slice(-6, -4) + ':' + row.dt.slice(-4, -2)
+                    const date = new Date(row.dt * 1000);
+                    const hm = date.getHours() + ':' + date.getMinutes();
                     res.push(`<a href="/?page=cam&hash=${hash}">${row.name}</a><i>${hm}<i>`);
                     this._lastDateTime = row.dt;
                     this._updateNavList(hash, hm);
@@ -138,11 +142,10 @@ class Bell {
                 if (!res.length) {
                     return
                 }
-                this._audio.play();
-
                 this._modal.querySelector('.content').innerHTML = res.join('<br>');
                 this._modal.classList.remove('hidden');
                 document.body.classList.add('dimmed');
+                this._audio.play(); // can fall with "user didn't interact" exception, place this line at the end
             })
             .catch(() => {
                 if (!this._pending) {

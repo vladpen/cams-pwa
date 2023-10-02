@@ -10,11 +10,15 @@
     const appendRow = (key, val, kind) => {
         let li = document.createElement('li');
         let a = document.createElement('a');
+        let i = document.createElement('i');
         a.href = `/?page=${kind}&hash=${key}`;
         a.innerHTML = val.name;
+        if (val.bell) {
+            i.innerHTML = val.bell;
+        }
         li.classList.add(kind);
         li.append(a);
-        li.append(document.createElement('i'));
+        li.append(i);
         li.dataset.hash = key;
         document.querySelector('ul').append(li);
     }

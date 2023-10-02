@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from http.cookies import SimpleCookie
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
+from datetime import datetime
 from _config import Config
 from auth import Auth
 from videos import Videos
@@ -168,7 +169,8 @@ class Handler(BaseHTTPRequestHandler):
                     'name': cam['name'],
                     'codecs': cam['codecs'],
                     'sensitivity': cam['sensitivity'],
-                    'events': cam['events']}
+                    'events': cam['events'],
+                    'bell': self._get_bell_time(hash)}
                 if cam['sensitivity'] or cam['events']:
                     bell_hidden = ''
 
@@ -224,6 +226,14 @@ class Handler(BaseHTTPRequestHandler):
         content = content.replace('{bell_hidden}'.encode('UTF-8'), bell_hidden.encode('UTF-8'))
         return content.replace('{title}'.encode('UTF-8'), title.encode('UTF-8'))
 
+    def _get_bell_time(self, hash) -> str:
+        if hash not in Share.cam_motions:
+            return ''
+        last_bell_datetime = datetime.fromtimestamp(Share.cam_motions[hash])
+        if (datetime.now() - last_bell_datetime).total_seconds() > 43200:  # not older than 12 hours
+            return ''
+        return last_bell_datetime.strftime('%H:%M')
+
     @staticmethod
     def _get_content(template: str) -> bytes:
         try:
@@ -270,7 +280,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self.auth.info():
             return self._send_error(403)
 
-        last_date_time = self._query['dt'][0]
+        try:
+            last_date_time = int(self._query['dt'][0])
+        except Exception as e:
+            last_date_time = 0
+            Log.write(f'Web bell: send query ERROR {repr(e)}')
+
         prev_motions = Share.cam_motions.copy()
         cnt = 0
         time.sleep(1)
@@ -279,14 +294,14 @@ class Handler(BaseHTTPRequestHandler):
             for hash, date_time in Share.cam_motions.items():
                 if self.auth.info() != Config.master_cam_hash and self.auth.info() != hash:
                     continue
-                if hash in prev_motions and prev_motions[hash] >= date_time:
-                    continue
                 if last_date_time >= date_time:
+                    continue
+                if hash in prev_motions and prev_motions[hash] >= date_time:
                     continue
                 res[hash] = {'dt': date_time, 'name': Config.cameras[hash]["name"]}
 
             cnt += 1
-            if not res and cnt < 600:
+            if not res and cnt < 60:
                 time.sleep(1)
                 continue
 

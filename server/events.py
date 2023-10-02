@@ -37,16 +37,21 @@ class Events:
             return
         live_path = f'{self._events_path}/{folders[-1]}'
 
-        cmd = f'ls -A {live_path} | tail -1'
-        last_event = await self._exec(cmd)
-        if not last_event or (self._last_event and last_event <= self._last_event):
+        cmd = f'ls --full-time {live_path} | tail -1 | awk ' + "'{print $6,$7,$8}'"
+        last_event_iso = await self._exec(cmd)
+        if not last_event_iso:
+            return
+        last_event_ts = int(datetime.fromisoformat(last_event_iso).timestamp())
+        if self._last_event and last_event_ts <= self._last_event:
             return
 
-        self._last_event = last_event
+        Share.cam_motions[self._hash] = last_event_ts
+        if not self._last_event:
+            self._last_event = last_event_ts
+            return
 
-        now_date_time = datetime.now().strftime(self.DT_WEB_FORMAT)
-        Share.cam_motions[self._hash] = now_date_time
-        Log.print(f'Events: motion detected: {now_date_time} {self._hash}')
+        self._last_event = last_event_ts
+        Log.print(f'Events: motion detected: {last_event_iso} {self._hash}')
 
     async def _rotate(self) -> None:
         now_date = datetime.now().strftime(self.DT_ROOT_FORMAT)
