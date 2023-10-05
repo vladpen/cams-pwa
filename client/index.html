@@ -1,26 +1,29 @@
-<main><ul class="nav"></ul></main>
-
-<footer class="fixed">
+<header class="fixed">
     <i class="bell-btn {bell_hidden}"></i>
-</footer>
+</header>
+
+<main><ul class="nav"></ul></main>
 
 <script src="/js/base.js"></script>
 <script src="/js/bell.js"></script>
 <script>
     const appendRow = (key, val, kind) => {
         let li = document.createElement('li');
-        let a = document.createElement('a');
+        let span = document.createElement('span');
         let i = document.createElement('i');
-        a.href = `/?page=${kind}&hash=${key}`;
-        a.innerHTML = val.name;
+        span.innerHTML = val.name;
         if (val.bell) {
             i.innerHTML = val.bell;
         }
         li.classList.add(kind);
-        li.append(a);
+        li.append(span);
         li.append(i);
         li.dataset.hash = key;
         document.querySelector('ul').append(li);
+        li.onclick = e => {
+            li.classList.add('blink');
+            document.location.href = `/?page=${kind}&hash=${key}`;
+        }
     }
     for (const [key, val] of Object.entries({cams})) {
         appendRow(key, val, 'cam');

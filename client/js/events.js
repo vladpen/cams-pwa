@@ -12,8 +12,7 @@ class Events extends Base {
     run = () => {
         this.header.querySelector('.back-btn').onclick = this.back;
         this.header.querySelector('.link-btn').onclick = () => {
-            this.loader.classList.remove('hidden');
-            document.location.replace(`/?page=cam&hash=${this._hash}`);
+            this.replaceLocation(`/?page=cam&hash=${this._hash}`);
         }
         document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;

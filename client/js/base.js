@@ -72,6 +72,7 @@ class Base {
     }
 
     back = () => {
+        this.header.querySelector('.back-btn').classList.add('blink');
         this.loader.classList.remove('hidden');
         const group_hash = sessionStorage.getItem('group_hash');
         if (group_hash) {
@@ -79,5 +80,11 @@ class Base {
         } else {
             document.location.href = '/';
         }
+    }
+
+    replaceLocation = href => {
+        this.header.querySelector('.link-btn').classList.add('blink');
+        this.loader.classList.remove('hidden');
+        document.location.replace(href);
     }
 }

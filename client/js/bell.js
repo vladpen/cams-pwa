@@ -1,7 +1,7 @@
 class Bell {
     static run = () => {
-        this._btnBell = document.querySelector('footer .bell-btn');
-        if (this._btnBell.classList.contains('hidden')) {
+        this._btnBell = document.querySelector('header .bell-btn');
+        if (!this._btnBell || this._btnBell.classList.contains('hidden')) {
             return;
         }
         this._audio = new Audio('/bell.mp3');
@@ -134,7 +134,7 @@ class Bell {
                         return;  // continue forEach
                     }
                     const date = new Date(row.dt * 1000);
-                    const hm = date.getHours() + ':' + date.getMinutes();
+                    const hm = date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2);
                     res.push(`<a href="/?page=cam&hash=${hash}">${row.name}</a><i>${hm}<i>`);
                     this._lastDateTime = row.dt;
                     this._updateNavList(hash, hm);

@@ -14,10 +14,9 @@ class Group extends Base {
             box.append(frame);
 
             frame.onclick = () => {
+                frame.classList.add('blink');
                 this.loader.classList.remove('hidden');
                 document.location.href = `/?page=cam&hash=${hash}`;
-                let overlay = document.createElement('div');
-                frame.append(overlay);
             }
             const player = new Player(video, hash, this._cams[hash]);
             player.start();
@@ -26,7 +25,8 @@ class Group extends Base {
         document.onscroll = this.hideBars;
         document.ontouchmove = this.hideBars;
 
-        this.header.querySelector('.back-btn').onclick = () => {
+        this.header.querySelector('.back-btn').onclick = e => {
+            e.target.classList.add('blink');
             this.loader.classList.remove('hidden');
             document.location.href = '/';
         }

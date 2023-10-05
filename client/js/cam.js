@@ -65,8 +65,7 @@ class Cam extends Base {
             this.motionRange.value = localStorage.getItem('motion_' + this._hash);
         }
         this.header.querySelector('.link-btn').onclick = () => {
-            this.loader.classList.remove('hidden');
-            document.location.replace(`/?page=events&hash=${this._hash}`);
+            this.replaceLocation(`/?page=events&hash=${this._hash}`);
         }
         Bell.wakeLock();
     }

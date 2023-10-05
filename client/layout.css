@@ -12,7 +12,7 @@ form input.error {background: #fd7;}
 .video-box video {width: 100%; display: block; position: absolute; z-index: 1;}
 .video-box div {width: 100%; height: 100%; background: rgba(255, 255, 255, 0.4); position: absolute; z-index: 2;}
 .group-box {display: flex; flex-wrap: wrap; justify-content: center;}
-.image-box {text-align: center;}
+.image-box {position: fixed; text-align: center;}
 .image-box img {max-width: 100%; max-height: 100%;}
 .fit-width {width: 100%;}
 .fit-height {height: 100%;}
@@ -25,6 +25,7 @@ form input.error {background: #fd7;}
 .bar .arch .range {position: absolute; top: -10em; width: 3px; height: 9.5em; -webkit-appearance: slider-vertical;}
 .bar .speed-range {left: 1.3em;}
 .bar .motion-range {right: 1.3em;}
+svg.invisible {opacity: 0; visibility: hidden;}
 header svg, footer svg {
     height: 1em; padding: 0.5em; display: inline-flex; cursor: pointer;
     fill: #fff; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; transition: all 0.1s ease-in-out;
@@ -34,14 +35,15 @@ header svg, footer svg {
 svg.big {height: 1.2em; padding: 0.4em;}
 svg.selected {stroke: #fa0; fill: #fa0;}
 .disabled svg {cursor: default; filter: opacity(0.3);}
-
 main {width: 100%; display: flex; justify-content: center; align-items: center;}
 main.events {background: #400;}
 header {display: flex; font-size: 1.2em;}
 header .back-btn, header .title, footer {background: rgba(0, 0, 0, 0.2);}
 header .title {align-items: center; padding-right: 0.3em;}
 header.events .title {color: #f74;}
-header .link-btn {margin-left: auto;}
+header .expander {margin-left: auto;}
+header.fixed {position: fixed; top: 0; right: 0;}
+header i {height: 2em; width: 2em; display: inline-flex; cursor: pointer; transition: all 0.1s ease-in-out;}
 footer {display: grid; font-size: 1.2em;}
 footer section {display: flex; align-items: center; white-space: nowrap;}
 footer .time-range {
@@ -55,18 +57,17 @@ footer .range-box {
     background-image: radial-gradient(circle, rgb(200,200,200) 3px, rgba(0, 0, 0, 0) 1px);
 }
 footer .center {margin: auto;}
-footer.fixed {position: fixed; bottom: 0; right: 0;}
 footer .arrow polyline {stroke-width: 2; fill: none;}
 footer .chart {position: absolute; height: 100%; width: 100%; z-index: -1;}
 footer .chart svg {height: 100%; width: 100%; padding: 0;}
 footer .chart rect {stroke: none; fill: rgba(255, 255, 255, 0.2); transition: all 0.5s ease-in-out;}
-footer i {height: 2em; width: 2em; display: inline-flex; cursor: pointer; transition: all 0.1s ease-in-out;}
 i.bell-btn {background-image: url('/img/bell_off.svg'); background-size: 1em 1em; background-position: center; background-repeat: no-repeat;}
 i.bell-btn.selected {background-image: url('/img/bell.svg');}
-.nav {list-style-type: none; margin: auto; padding: 0;}
-.nav li {padding: 0.5em 2em;}
-.nav li a {color: white; text-decoration: none; font-size: 1.2em; white-space: nowrap;}
-.nav li.group a {color: #d9f;}
+.nav {list-style-type: none; margin: auto; padding: 0.1em;}
+.nav li {padding: 0.5em 2em; cursor: pointer;}
+.nav li span {font-size: 1.1em; white-space: nowrap;}
+.nav li.group span {color: #d9f;}
+.nav li i {font-size: 0.9em;}
 .loader {
     width: 1em; height: 1em; align-self: center; margin-left: 0.3em;
     border: 3px solid #fff; border-bottom-color: transparent; border-radius: 50%;
@@ -86,3 +87,6 @@ header, main, footer {transition: filter 0.3s ease-in-out;}
 .modal .content {display: inline-block;}
 .modal .content a {text-decoration: none; color: #fff;}
 .modal .content i, .nav li i {margin-left: 0.5em; color: #888;}
+
+.blink {animation: blink-link 1s linear 1;}
+@keyframes blink-link {0% {opacity: 1;} 50% {opacity: 0;} 100% {opacity: 1;}}
