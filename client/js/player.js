@@ -14,6 +14,7 @@ class Player extends Base {
         this._sourceBuffer;
         this._sourceType = `video/mp4; codecs="${camInfo['codecs']}"`;
         this._mediaSource = new MediaSource();
+        this._fetchTimeoutId;
     }
 
     start = () => {
@@ -147,7 +148,11 @@ class Player extends Base {
                 if (!Object.keys(window.frameLoading).length) {
                     this.loader.classList.add('hidden');
                 }
-                if (!data.byteLength) {
+                if (!data.byteLength) { // retry after camera failure
+                    clearTimeout(this._fetchTimeoutId);
+                    this._fetchTimeoutId = window.setTimeout(() => {
+                        this._fetch(url, args, callback, force);
+                    }, 4000);
                     return;
                 }
                 this._sourceBuffer.appendBuffer(data);
