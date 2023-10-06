@@ -6,7 +6,7 @@ import mimetypes
 from os import path as os_path
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from http.cookies import SimpleCookie
-from socketserver import ThreadingMixIn
+from socketserver import ThreadingMixIn, BaseServer
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from _config import Config
@@ -42,6 +42,13 @@ class ThreadingServer(ThreadingMixIn, HTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
+    def __init__(self, request: bytes, client_address: tuple[str, int], server: BaseServer):
+        super().__init__(request, client_address, server)
+        self.hash = None
+        self._query = None
+        self._videos = None
+        self._images = None
+
     def do_GET(self) -> None:
         """ Router
             Possible GET params: ?<page|video|image|bell>=<val>[...]&hash=<hash>[...]
@@ -116,7 +123,7 @@ class Handler(BaseHTTPRequestHandler):
         return 'web'
 
     def _send_static(self, static_file: str) -> None:
-        if not re.search(r'^/([a-z]+/)*[a-z\d\._]+$', static_file):
+        if not re.search(r'^/([a-z]+/)*[a-z\d._]+$', static_file):
             return self._send_error()
         try:
             with open(f'{os_path.dirname(os_path.realpath(__file__))}/../client{static_file}', 'rb') as file:
@@ -163,14 +170,14 @@ class Handler(BaseHTTPRequestHandler):
 
         cams_list = {}
         bell_hidden = 'hidden'
-        for hash, cam in Config.cameras.items():
-            if self.auth.info() == Config.master_cam_hash or self.auth.info() == hash:
-                cams_list[hash] = {
+        for cam_hash, cam in Config.cameras.items():
+            if self.auth.info() == Config.master_cam_hash or self.auth.info() == cam_hash:
+                cams_list[cam_hash] = {
                     'name': cam['name'],
                     'codecs': cam['codecs'],
                     'sensitivity': cam['sensitivity'],
                     'events': cam['events'],
-                    'bell': self._get_bell_time(hash)}
+                    'bell': self._get_bell_time(cam_hash)}
                 if cam['sensitivity'] or cam['events']:
                     bell_hidden = ''
 
@@ -188,8 +195,7 @@ class Handler(BaseHTTPRequestHandler):
             )
         elif template == '/cam.html':
             if self.hash not in cams_list:
-                return ''
-            cams_list[self.hash]
+                return b''
             videos = Videos(self.hash)
             cam = Config.cameras[self.hash]
             title = cam['name']
@@ -203,9 +209,9 @@ class Handler(BaseHTTPRequestHandler):
             )
         elif template == '/group.html':
             cams = {}
-            for hash in Config.groups[self.hash]['cams']:
-                if hash in cams_list:
-                    cams[hash] = cams_list[hash]
+            for cam_hash in Config.groups[self.hash]['cams']:
+                if cam_hash in cams_list:
+                    cams[cam_hash] = cams_list[cam_hash]
             if hasattr(Config, 'groups'):
                 title = Config.groups[self.hash]['name']
             content = content.replace(
@@ -213,8 +219,7 @@ class Handler(BaseHTTPRequestHandler):
             )
         elif template == '/events.html':
             if self.hash not in cams_list:
-                return ''
-            cams_list[self.hash]
+                return b''
             images = Images(self.hash)
             cam = Config.cameras[self.hash]
             title = cam['name']
@@ -226,10 +231,11 @@ class Handler(BaseHTTPRequestHandler):
         content = content.replace('{bell_hidden}'.encode('UTF-8'), bell_hidden.encode('UTF-8'))
         return content.replace('{title}'.encode('UTF-8'), title.encode('UTF-8'))
 
-    def _get_bell_time(self, hash) -> str:
-        if hash not in Share.cam_motions:
+    @staticmethod
+    def _get_bell_time(cam_hash) -> str:
+        if cam_hash not in Share.cam_motions:
             return ''
-        last_bell_datetime = datetime.fromtimestamp(Share.cam_motions[hash])
+        last_bell_datetime = datetime.fromtimestamp(Share.cam_motions[cam_hash])
         if (datetime.now() - last_bell_datetime).total_seconds() > 43200:  # not older than 12 hours
             return ''
         return last_bell_datetime.strftime('%H:%M')
@@ -268,7 +274,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', mime_type)
             self.send_header('Content-Length', str(file_size))
             self.send_header('Cache-Control', 'no-store')
-            self.send_header('X-Range', rng)
+            self.send_header('X-Range', str(rng))
             self.send_header('X-Position', position)
             self.end_headers()
             with open(file_path, 'rb') as video_file:
@@ -291,14 +297,14 @@ class Handler(BaseHTTPRequestHandler):
         time.sleep(1)
         while True:
             res = {}
-            for hash, date_time in Share.cam_motions.items():
-                if self.auth.info() != Config.master_cam_hash and self.auth.info() != hash:
+            for cam_hash, date_time in Share.cam_motions.items():
+                if self.auth.info() != Config.master_cam_hash and self.auth.info() != cam_hash:
                     continue
                 if last_date_time >= date_time:
                     continue
-                if hash in prev_motions and prev_motions[hash] >= date_time:
+                if cam_hash in prev_motions and prev_motions[cam_hash] >= date_time:
                     continue
-                res[hash] = {'dt': date_time, 'name': Config.cameras[hash]["name"]}
+                res[cam_hash] = {'dt': date_time, 'name': Config.cameras[cam_hash]["name"]}
 
             cnt += 1
             if not res and cnt < 60:

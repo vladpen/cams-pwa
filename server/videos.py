@@ -26,7 +26,7 @@ class Videos:
     def get_days(self) -> int:
         return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
 
-    def get(self, args: List[Any]) -> Tuple[str, int]:
+    def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int]:
         date_time = args['dt'][0] if 'dt' in args else ''
 
         if args['video'][0] == 'next':
@@ -45,7 +45,7 @@ class Videos:
 
     def get_range_by_path(self, path: str) -> str:
         if self._range > self.MAX_RANGE:
-            return self._range
+            return str(self._range)
         start_date = self._get_start_date()
         delta_seconds = (
             datetime.strptime(self.get_datetime_by_path(path), self.DT_WEB_FORMAT) - start_date

@@ -1,5 +1,5 @@
 import subprocess
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, Dict
 from _config import Config
 
 
@@ -23,7 +23,7 @@ class Images:
             cnt.append(int(self._exec(cmd, 0)))
         return cnt
 
-    def get(self, args: List[Any]) -> Tuple[str, int, str, int]:
+    def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int, str, int]:
         if args['image'][0] == 'next':
             step = int(args['step'][0]) if 'step' in args else 0
             position = args['pos'][0].split('.') if 'pos' in args else [-1, -1]
@@ -52,7 +52,7 @@ class Images:
             file_idx = len(files) - 1
 
         # try to get file from current folder
-        if (step < 0 and abs(step) <= file_idx) or (step > 0 and step <= len(files) - file_idx - 1):
+        if (step < 0 and abs(step) <= file_idx) or (0 < step <= len(files) - file_idx - 1):
             file_idx += step
             return self._response(folders, files, folder_idx, file_idx)
 
@@ -61,7 +61,7 @@ class Images:
         elif step > 0 and folder_idx >= len(folders) - 1:
             return self._get_last()
 
-        if step < 0 and folder_idx > 0:
+        if step < 0 < folder_idx:
             folder_idx -= 1
             file_idx = -1
             step = -1
@@ -72,7 +72,7 @@ class Images:
 
         return self._get_next(step, [folder_idx, file_idx])
 
-    def _response(self, folders, files, folder_idx, file_idx):
+    def _response(self, folders, files, folder_idx, file_idx) -> Tuple[str, int, str, int]:
         range_folder = self.MAX_RANGE / len(folders)
         folder_range = range_folder * folder_idx
 
@@ -103,13 +103,13 @@ class Images:
 
         return self._response(folders, files, folder_idx, file_idx)
 
-    def _get_last(self) -> Tuple[str, int, int, int]:
+    def _get_last(self) -> Tuple[str, int, str, int]:
         return self._get_file(-1, self.MAX_RANGE + 1)
 
-    def _get_first(self) -> Tuple[str, int, int, int]:
+    def _get_first(self) -> Tuple[str, int, str, int]:
         return self._get_file(0, -1)
 
-    def _get_file(self, pos: int, rng: int) -> Tuple[str, int, int, int]:
+    def _get_file(self, pos: int, rng: int) -> Tuple[str, int, str, int]:
         folders = self._get_root_folders()
         if not folders:
             return '', 0, '', rng

@@ -15,7 +15,7 @@ class Events:
         self._hash = camera_hash
         self._cam_config = Config.cameras[self._hash]
         self._events_path = f'{Config.events_path}/{self._cam_config["folder"]}'
-        self._last_event = ''
+        self._last_event = 0
         self._last_rotation_date = ''
         self._root_folders = []
 
@@ -74,7 +74,7 @@ class Events:
         if not await self._exec(cmd):
             return
 
-        # check yesterday folder is exist
+        # check yesterday folder exists
         cmd = f'test -d {self._events_path}/{yesterday_folder} && echo 1'
         if await self._exec(cmd):
             return
@@ -116,7 +116,8 @@ class Events:
         self._root_folders = (await self._exec(cmd)).splitlines()
         return self._root_folders
 
-    async def _exec(self, cmd) -> str:
+    @staticmethod
+    async def _exec(cmd) -> str:
         p = await asyncio.create_subprocess_shell(
             cmd,
             stdout=asyncio.subprocess.PIPE,

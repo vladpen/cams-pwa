@@ -57,7 +57,7 @@ class Auth:
             if decrypted != Config.master_cam_hash and decrypted not in Config.cameras:
                 return
             return decrypted
-        except Exception:
+        except (Exception,):
             return
 
     @staticmethod
