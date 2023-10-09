@@ -144,16 +144,16 @@ class Player extends Base {
             })
             .then(data => {
                 this._progress = false;
-                delete window.frameLoading[this._hash];
-                if (!Object.keys(window.frameLoading).length) {
-                    this.loader.classList.add('hidden');
-                }
                 if (!data.byteLength) { // retry after camera failure
                     clearTimeout(this._fetchTimeoutId);
                     this._fetchTimeoutId = window.setTimeout(() => {
                         this._fetch(url, args, callback, force);
                     }, 4000);
                     return;
+                }
+                delete window.frameLoading[this._hash];
+                if (!Object.keys(window.frameLoading).length) {
+                    this.loader.classList.add('hidden');
                 }
                 this._sourceBuffer.appendBuffer(data);
                 this._datetime = datetime;

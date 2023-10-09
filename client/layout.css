@@ -18,13 +18,14 @@ form input.error {background: #fd7;}
 .fit-height {height: 100%;}
 .bar {
     position: absolute; z-index: 3; top: 50%; width: 100%; transform-origin: 0 0;
-    color: #fff; opacity: 1; visibility: visible;}
+    color: #fff; opacity: 1; visibility: visible;
+}
 .bar.invisible {opacity: 0; visibility: hidden; transition: visibility 0.5s, opacity 0.5s; transition-delay: 5s;}
 .bar span {display: inline-flex;}
 .bar .arch {position: relative;}
-.bar .arch .range {position: absolute; top: -10em; width: 3px; height: 9.5em; -webkit-appearance: slider-vertical;}
-.bar .speed-range {left: 1.3em;}
-.bar .motion-range {right: 1.3em;}
+.bar .arch .range {position: absolute; top: -105%; width: 100%; height: 2px; transform: rotate(-90deg);}
+.bar .speed-range {left: -28%;}
+.bar .motion-range {right: -28%;}
 svg.invisible {opacity: 0; visibility: hidden;}
 header svg, footer svg {
     height: 1em; padding: 0.5em; display: inline-flex; cursor: pointer;
@@ -35,38 +36,41 @@ header svg, footer svg {
 svg.big {height: 1.2em; padding: 0.4em;}
 svg.selected {stroke: #fa0; fill: #fa0;}
 .disabled svg {cursor: default; filter: opacity(0.3);}
-main {width: 100%; display: flex; justify-content: center; align-items: center;}
+main {width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;}
 main.events {background: #400;}
 header {display: flex; font-size: 1.2em;}
-header .back-btn, header .title, footer {background: rgba(0, 0, 0, 0.2);}
+header .start-wrap, header .end-wrap, footer {background: rgba(0, 0, 0, 0.3);}
+header .start-wrap {border-bottom-right-radius: 0.3em}
+header .end-wrap {margin-left: auto; border-bottom-left-radius: 0.3em}
 header .title {align-items: center; padding-right: 0.3em;}
-header.events .title {color: #f74;}
-header .expander {margin-left: auto;}
-header.fixed {position: fixed; top: 0; right: 0;}
+header.fixed {position: fixed; top: 0; left: 0; right: 0;}
 header i {height: 2em; width: 2em; display: inline-flex; cursor: pointer; transition: all 0.1s ease-in-out;}
 footer {display: grid; font-size: 1.2em;}
 footer section {display: flex; align-items: center; white-space: nowrap;}
 footer .time-range {
     appearance: none; display: block; cursor: pointer;
-    width: 100%; height: 2px; margin: 1em auto 0 auto;  background-color: rgb(200, 200, 200);
+    width: 100%; height: 2px; margin: 1em auto;  background-color: rgb(200, 200, 200);
 }
 footer .time-range::-webkit-slider-thumb {appearance: none; width: 2em; height: 2em; border-radius: 50%; background: #08f;}
 footer .time-range::-moz-range-thumb {width: 2em; height: 2em; border-radius: 50%; background: #08f;}
-footer .range-box {
-    height: 37px; padding-bottom: 8px; background-size: 0 50px;
+footer .range-box.dotted {
     background-image: radial-gradient(circle, rgb(200,200,200) 3px, rgba(0, 0, 0, 0) 1px);
+    background-position: center;
 }
 footer .center {margin: auto;}
 footer .arrow polyline {stroke-width: 2; fill: none;}
 footer .chart {position: absolute; height: 100%; width: 100%; z-index: -1;}
 footer .chart svg {height: 100%; width: 100%; padding: 0;}
 footer .chart rect {stroke: none; fill: rgba(255, 255, 255, 0.2); transition: all 0.5s ease-in-out;}
-i.bell-btn {background-image: url('/img/bell_off.svg'); background-size: 1em 1em; background-position: center; background-repeat: no-repeat;}
+i.bell-btn {
+    background-image: url('/img/bell_off.svg');
+    background-size: 1em 1em; background-position: center; background-repeat: no-repeat;
+}
 i.bell-btn.selected {background-image: url('/img/bell.svg');}
-.nav {list-style-type: none; margin: auto; padding: 0.1em;}
+.nav {list-style-type: none; margin: auto; padding: 0.1em; z-index: 2;}
 .nav li {padding: 0.5em 2em; cursor: pointer;}
-.nav li span {font-size: 1.1em; white-space: nowrap;}
-.nav li.group span {color: #d9f;}
+.nav li a {font-size: 1.1em; padding: 0.5em; white-space: nowrap; text-decoration: none; color: #fff;}
+.nav li.group a {color: #d9f;}
 .nav li i {font-size: 0.9em;}
 .loader {
     width: 1em; height: 1em; align-self: center; margin-left: 0.3em;

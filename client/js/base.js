@@ -28,7 +28,7 @@ class Base {
         this.header.style.left = vp.pageLeft + 'px';
         this.header.style.top = vp.pageTop + 'px';
         this.footer.style.left = vp.pageLeft + 'px';
-        this.footer.style.top = vp.pageTop + vp.height - (this.footer.offsetHeight + 1) / scale + 'px';
+        this.footer.style.top = vp.pageTop + vp.height - (this.footer.offsetHeight) / scale + 'px';
 
         if (this.speedRange) {
             this.speedRange.classList.add('hidden');
@@ -73,7 +73,6 @@ class Base {
 
     back = () => {
         this.header.querySelector('.back-btn').classList.add('blink');
-        this.loader.classList.remove('hidden');
         const group_hash = sessionStorage.getItem('group_hash');
         if (group_hash) {
             document.location.href = `/?page=group&hash=${group_hash}`;
@@ -84,7 +83,6 @@ class Base {
 
     replaceLocation = href => {
         this.header.querySelector('.link-btn').classList.add('blink');
-        this.loader.classList.remove('hidden');
         document.location.replace(href);
     }
 }

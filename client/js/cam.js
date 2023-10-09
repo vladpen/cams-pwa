@@ -47,7 +47,7 @@ class Cam extends Base {
 
         this.footer.querySelector('.rwd').onclick = this._seek;
         this.footer.querySelector('.fwd').onclick = this._seek;
-        this.footer.querySelector('.range-box').style.backgroundSize = 100 / this._days + "% 50px";
+        this.footer.querySelector('.range-box').style.backgroundSize = (100 / this._days + 1) + "% 50px";
         this.btnMotion.onclick = this._toggleMotion;
         this.btnSpeed.onclick = this._toggleSpeed;
 
@@ -149,7 +149,7 @@ class Cam extends Base {
         for (const e of this.footer.querySelectorAll('.arch')) {
             e.classList.remove('disabled');
         }
-        this.header.querySelector('.loader').classList.remove('hidden');
+        this.loader.classList.remove('hidden');
         document.body.classList.add('arch');
     }
 

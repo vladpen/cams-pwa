@@ -15,7 +15,6 @@ class Group extends Base {
 
             frame.onclick = () => {
                 frame.classList.add('blink');
-                this.loader.classList.remove('hidden');
                 document.location.href = `/?page=cam&hash=${hash}`;
             }
             const player = new Player(video, hash, this._cams[hash]);
@@ -27,7 +26,6 @@ class Group extends Base {
 
         this.header.querySelector('.back-btn').onclick = e => {
             e.target.classList.add('blink');
-            this.loader.classList.remove('hidden');
             document.location.href = '/';
         }
         this.header.onmousedown = this.showBars;
