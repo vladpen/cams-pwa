@@ -39,9 +39,9 @@ svg.selected {stroke: #fa0; fill: #fa0;}
 main {width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;}
 main.events {background: #400;}
 header {display: flex; font-size: 1.2em;}
-header .start-wrap, header .end-wrap, footer {background: rgba(0, 0, 0, 0.3);}
-header .start-wrap {border-bottom-right-radius: 0.3em}
-header .end-wrap {margin-left: auto; border-bottom-left-radius: 0.3em}
+header .start-box, header .end-box, footer {background: rgba(0, 0, 0, 0.3);}
+header .start-box {border-bottom-right-radius: 0.3em}
+header .end-box {margin-left: auto; border-bottom-left-radius: 0.3em}
 header .title {align-items: center; padding-right: 0.3em;}
 header.fixed {position: fixed; top: 0; left: 0; right: 0;}
 header i {height: 2em; width: 2em; display: inline-flex; cursor: pointer; transition: all 0.1s ease-in-out;}
