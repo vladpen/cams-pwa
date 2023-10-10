@@ -71,7 +71,7 @@ i.bell-btn.selected {background-image: url('/img/bell.svg');}
 .nav li {padding: 0.5em 2em; cursor: pointer;}
 .nav li a {font-size: 1.1em; padding: 0.5em; white-space: nowrap; text-decoration: none; color: #fff;}
 .nav li.group a {color: #d9f;}
-.nav li i {font-size: 0.9em;}
+.nav li i {font-size: 0.8em;}
 .loader {
     width: 1em; height: 1em; align-self: center; margin-left: 0.3em;
     border: 3px solid #fff; border-bottom-color: transparent; border-radius: 50%;
