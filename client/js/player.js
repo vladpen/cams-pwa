@@ -29,9 +29,9 @@ class Player extends Base {
             return;
         }
         if (!window.frameLoading) {
-            window.frameLoading = {}
+            window.frameLoading = {};
         }
-        window.frameLoading[this._hash] = 1
+        window.frameLoading[this._hash] = 1;
     }
 
     seek = step => {
@@ -74,7 +74,7 @@ class Player extends Base {
     }
 
     _onTimeUpdate = () => {
-        if (this._lock || this._progress || this._sourceBuffer.timestampOffset - this._video.currentTime > 0) {
+        if (this._lock || this._progress) {
             return;
         }
         if (this._playMode == 'live') {
@@ -143,14 +143,15 @@ class Player extends Base {
                 return r.arrayBuffer();
             })
             .then(data => {
-                this._progress = false;
                 if (!data.byteLength) { // retry after camera failure
                     clearTimeout(this._fetchTimeoutId);
                     this._fetchTimeoutId = window.setTimeout(() => {
+                        this._progress = false;
                         this._fetch(url, args, callback, force);
                     }, 4000);
                     return;
                 }
+                this._progress = false;
                 delete window.frameLoading[this._hash];
                 if (!Object.keys(window.frameLoading).length) {
                     this.loader.classList.add('hidden');
