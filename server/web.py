@@ -9,6 +9,7 @@ from http.cookies import SimpleCookie
 from socketserver import ThreadingMixIn, BaseServer
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
+from typing import Tuple
 from _config import Config
 from auth import Auth
 from videos import Videos
@@ -42,7 +43,7 @@ class ThreadingServer(ThreadingMixIn, HTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    def __init__(self, request: bytes, client_address: tuple[str, int], server: BaseServer):
+    def __init__(self, request: bytes, client_address: Tuple[str, int], server: BaseServer):
         super().__init__(request, client_address, server)
         self.hash = None
         self._query = None
