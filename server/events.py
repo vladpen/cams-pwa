@@ -1,6 +1,8 @@
 import asyncio
+import re
 from datetime import datetime, timedelta
 from typing import List
+import const
 from _config import Config
 from share import Share
 from log import Log
@@ -8,14 +10,12 @@ from log import Log
 
 class Events:
     CHECK_INTERVAL_SEC = 2
-    DT_ROOT_FORMAT = '%Y-%m-%d'
-    DT_WEB_FORMAT = '%Y%m%d%H%M%S'
 
     def __init__(self, camera_hash):
         self._hash = camera_hash
         self._cam_config = Config.cameras[self._hash]
         self._events_path = f'{Config.events_path}/{self._cam_config["folder"]}'
-        self._last_event = 0
+        self._last_event = ''
         self._last_rotation_date = ''
         self._root_folders = []
 
@@ -37,24 +37,25 @@ class Events:
             return
         live_path = f'{self._events_path}/{folders[-1]}'
 
-        cmd = f'ls --full-time {live_path} | tail -1 | awk ' + "'{print $6,$7,$8}'"
+        cmd = f'ls --full-time {live_path} | tail -1 | awk ' + "'{print $6,$7}'"
         last_event_iso = await self._exec(cmd)
-        if not last_event_iso:
+        no_milliseconds = re.sub(r'\.[^.]+$', '', last_event_iso)
+        last_event_digits = re.sub(r'[^\d]', '', no_milliseconds)
+        if not last_event_digits:
             return
-        last_event_ts = int(datetime.fromisoformat(last_event_iso).timestamp())
-        if self._last_event and last_event_ts <= self._last_event:
+        if self._last_event and last_event_digits <= self._last_event:
             return
 
-        Share.cam_motions[self._hash] = last_event_ts
+        Share.cam_motions[self._hash] = last_event_digits
         if not self._last_event:
-            self._last_event = last_event_ts
+            self._last_event = last_event_digits
             return
 
-        self._last_event = last_event_ts
+        self._last_event = last_event_digits
         Log.print(f'Events: motion detected: {last_event_iso} {self._hash}')
 
     async def _rotate(self) -> None:
-        now_date = datetime.now().strftime(self.DT_ROOT_FORMAT)
+        now_date = datetime.now().strftime(const.DT_ROOT_FORMAT)
         if self._last_rotation_date and self._last_rotation_date == now_date:
             return
         self._last_rotation_date = now_date
@@ -62,7 +63,7 @@ class Events:
         await self._cleanup()
 
         # Rotation
-        yesterday_folder = (datetime.now() - timedelta(days=1)).strftime(self.DT_ROOT_FORMAT)
+        yesterday_folder = (datetime.now() - timedelta(days=1)).strftime(const.DT_ROOT_FORMAT)
 
         folders = await self._get_root_folders()
         if not folders:
@@ -88,7 +89,7 @@ class Events:
         Log.write(f'Events: rotation at {now_date} {self._hash}')
 
     async def _cleanup(self) -> None:
-        oldest_folder = (datetime.now() - timedelta(days=Config.events_period_days)).strftime(self.DT_ROOT_FORMAT)
+        oldest_folder = (datetime.now() - timedelta(days=Config.events_period_days)).strftime(const.DT_ROOT_FORMAT)
 
         cmd = f'ls -d {self._events_path}/*'
         p = await asyncio.create_subprocess_shell(

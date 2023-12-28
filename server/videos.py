@@ -3,15 +3,12 @@ import subprocess
 import time
 from datetime import datetime, timedelta
 from typing import Tuple, List, Dict, Any, Optional
+import const
 from _config import Config
 from log import Log
 
 
 class Videos:
-    MAX_RANGE = 2000
-    DT_ROOT_FORMAT = '%Y-%m-%d'
-    DT_FORMAT = '%Y-%m-%d/%H/%M'
-    DT_WEB_FORMAT = '%Y%m%d%H%M%S'
     DEPTH = 3
     MIN_FILE_SIZE = 1000
     MD_AVERAGE_LEN = 10
@@ -19,7 +16,7 @@ class Videos:
     def __init__(self, cam_hash: str):
         self._hash = cam_hash
         self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}'
-        self._range = self.MAX_RANGE
+        self._range = const.MAX_RANGE
         self._root_folder = []
         self._date_time = ''
 
@@ -35,30 +32,32 @@ class Videos:
             return self._get_next(step, date_time, sensitivity)
 
         elif args['video'][0] == 'range':
-            rng = int(args['range'][0]) if 'range' in args else self.MAX_RANGE
+            rng = int(args['range'][0]) if 'range' in args else const.MAX_RANGE
             return self._get_by_range(rng)
 
         return self._get_live(date_time)
 
     def get_datetime_by_path(self, path: str) -> str:
-        return re.sub(r'(-|/|.mp4)', '', path[len(self._cam_path) + 1:])
+        relative_path = path[len(self._cam_path) + 1:]
+        no_ext = re.sub(r'\.[^.]+$', '', relative_path)
+        return re.sub(r'[^\d]', '', no_ext)
 
     def get_range_by_path(self, path: str) -> str:
-        if self._range > self.MAX_RANGE:
+        if self._range > const.MAX_RANGE:
             return str(self._range)
         start_date = self._get_start_date()
-        delta_seconds = (
-            datetime.strptime(self.get_datetime_by_path(path), self.DT_WEB_FORMAT) - start_date
-        ).total_seconds()
         total_seconds = (datetime.now() - start_date).total_seconds()
-        return str(round(self.MAX_RANGE * delta_seconds / total_seconds))
+        delta_seconds = (
+            datetime.strptime(self.get_datetime_by_path(path), const.DT_WEB_FORMAT) - start_date
+        ).total_seconds()
+        return str(round(const.MAX_RANGE * delta_seconds / total_seconds))
 
     def _get_live(self, date_time: Optional[str] = '') -> Tuple[str, int]:
-        self._range = self.MAX_RANGE + 1
+        self._range = const.MAX_RANGE + 1
 
         path, size = self._get_live_file()  # checks now and last minute folder
         if not size:
-            fallback = (datetime.now() - timedelta(minutes=1)).strftime(self.DT_FORMAT).split('/')
+            fallback = (datetime.now() - timedelta(minutes=1)).strftime(const.DT_PATH_FORMAT).split('/')
             return self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
 
         segment_date_time = self.get_datetime_by_path(path)
@@ -69,12 +68,12 @@ class Videos:
         return self._get_live(date_time)
 
     def _get_by_range(self, rng: int) -> Tuple[str, int]:
-        rng = min(max(rng, 0), self.MAX_RANGE)
+        rng = min(max(rng, 0), const.MAX_RANGE)
 
         start_date = self._get_start_date()
         time_range = datetime.now() - start_date
-        delta_minutes = int(time_range.total_seconds() * rng / self.MAX_RANGE / 60)
-        wd = (start_date + timedelta(minutes=delta_minutes)).strftime(self.DT_FORMAT)
+        delta_minutes = int(time_range.total_seconds() * rng / const.MAX_RANGE / 60)
+        wd = (start_date + timedelta(minutes=delta_minutes)).strftime(const.DT_PATH_FORMAT)
 
         parts = wd.split('/')
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], 1)
@@ -94,12 +93,12 @@ class Videos:
 
         files = []
         if -10 < step < 0:
-            prev_dir = (datetime.strptime(date_time, self.DT_WEB_FORMAT) - timedelta(minutes=1)
-                        ).strftime(self.DT_FORMAT)
+            prev_dir = (datetime.strptime(date_time, const.DT_WEB_FORMAT) - timedelta(minutes=1)
+                        ).strftime(const.DT_PATH_FORMAT)
             files = self._get_files_by_folders([prev_dir, wd])
         elif 0 < step < 10:
-            next_dir = (datetime.strptime(date_time, self.DT_WEB_FORMAT) + timedelta(minutes=1)
-                        ).strftime(self.DT_FORMAT)
+            next_dir = (datetime.strptime(date_time, const.DT_WEB_FORMAT) + timedelta(minutes=1)
+                        ).strftime(const.DT_PATH_FORMAT)
             files = self._get_files_by_folders([wd, next_dir])
         if files and abs(step) < len(files):
             arr = files if step > 0 else reversed(files)
@@ -119,10 +118,10 @@ class Videos:
         sign = 1 if step > 0 else -1
         seconds = max(60, abs(step))
         folder = (
-            datetime.strptime(wd, self.DT_FORMAT) + timedelta(seconds=seconds) * sign
-        ).strftime(self.DT_FORMAT)
+            datetime.strptime(wd, const.DT_PATH_FORMAT) + timedelta(seconds=seconds) * sign
+        ).strftime(const.DT_PATH_FORMAT)
 
-        if step > 0 and folder > datetime.now().strftime(self.DT_FORMAT):
+        if step > 0 and folder > datetime.now().strftime(const.DT_PATH_FORMAT):
             return self._get_live(date_time)
 
         step = -2 if step < 0 else 1
@@ -130,7 +129,7 @@ class Videos:
         return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)
 
     def _get_start_date(self) -> datetime:
-        return datetime.strptime(self._get_folders()[0], self.DT_ROOT_FORMAT)
+        return datetime.strptime(self._get_folders()[0], const.DT_ROOT_FORMAT)
 
     def _find_nearest_file(self, parent: str, folder: str, step: int) -> Tuple[str, int]:
         """ If folder is set shift left (to parent folder); else shift right (to child folder) """
@@ -175,14 +174,16 @@ class Videos:
         sign = 1 if step > 0 else -1
         if step >= 60 or step <= -60:
             folder = (
-                datetime.strptime(self._date_time, self.DT_WEB_FORMAT) + timedelta(seconds=abs(step)) * sign
-            ).strftime(self.DT_FORMAT)
+                datetime.strptime(self._date_time, const.DT_WEB_FORMAT) + timedelta(seconds=abs(step)) * sign
+            ).strftime(const.DT_PATH_FORMAT)
         else:
             path = self._get_path_by_datetime(self._date_time)
             folder = '/'.join(path.split('/')[0:-1])
 
         last_files = {}
-        prev_folder = (datetime.strptime(folder, self.DT_FORMAT) - timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
+        prev_folder = (
+            datetime.strptime(folder, const.DT_PATH_FORMAT) - timedelta(minutes=1) * sign
+        ).strftime(const.DT_PATH_FORMAT)
         files = self._get_files(prev_folder)
         if files:
             for file in files:
@@ -229,10 +230,13 @@ class Videos:
             if average_size and float(f[0]) > average_size * sens:
                 return f'{self._cam_path}/{folder}/{f[1]}', int(f[0])
 
-        if folder >= datetime.now().strftime(self.DT_FORMAT):
+        if folder >= datetime.now().strftime(const.DT_PATH_FORMAT):
             return self._get_live()
 
-        next_folder = (datetime.strptime(folder, self.DT_FORMAT) + timedelta(minutes=1) * sign).strftime(self.DT_FORMAT)
+        next_folder = (
+            datetime.strptime(folder, const.DT_PATH_FORMAT) + timedelta(minutes=1) * sign
+        ).strftime(const.DT_PATH_FORMAT)
+
         return self._motion_detector(next_folder, last_files, sensitivity, sign)
 
     def _get_folders(self, folder: str = '') -> List[str]:
@@ -248,7 +252,7 @@ class Videos:
         wd = f"{self._cam_path}/{folder}"
         cmd = f'ls -l {wd} | awk ' + "'{print $5,$9}'"
         res = self._exec(cmd)
-        if not res and folder and folder < datetime.now().strftime(self.DT_FORMAT):
+        if not res and folder and folder < datetime.now().strftime(const.DT_PATH_FORMAT):
             self._exec(f'rmdir {self._cam_path}/{folder}')  # delete empty folder
         return res.splitlines()
 
@@ -273,7 +277,7 @@ class Videos:
         return '', 0
 
     def _get_live_file(self):
-        folder = datetime.now().strftime(self.DT_FORMAT)  # Regular case
+        folder = datetime.now().strftime(const.DT_PATH_FORMAT)  # Regular case
         files = self._get_files(folder)
         position = -2
         if len(files) > 1:
@@ -288,7 +292,7 @@ class Videos:
         elif files:
             position = -1
 
-        folder = (datetime.now() - timedelta(minutes=1)).strftime(self.DT_FORMAT)  # Possible case
+        folder = (datetime.now() - timedelta(minutes=1)).strftime(const.DT_PATH_FORMAT)  # Possible case
         return self._get_file(folder, position)
 
     @staticmethod

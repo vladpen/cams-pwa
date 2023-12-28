@@ -1,14 +1,10 @@
 import subprocess
 from typing import Tuple, List, Any, Dict
+import const
 from _config import Config
 
 
 class Images:
-    DT_ROOT_FORMAT = '%Y-%m-%d'
-    DT_WEB_FORMAT = '%Y%m%d%H%M%S'
-    MAX_RANGE = 2000
-    MAX_STEP = 100
-
     def __init__(self, camera_hash):
         self._hash = camera_hash
         self._cam_config = Config.cameras[self._hash]
@@ -30,7 +26,7 @@ class Images:
             return self._get_next(step, position)
 
         elif args['image'][0] == 'range':
-            rng = int(args['range'][0]) if 'range' in args else self.MAX_RANGE
+            rng = int(args['range'][0]) if 'range' in args else const.MAX_RANGE
             position = args['pos'][0].split('.') if 'pos' in args else [-1, -1]
             return self._get_by_range(rng, position)
 
@@ -73,7 +69,7 @@ class Images:
         return self._get_next(step, [folder_idx, file_idx])
 
     def _response(self, folders, files, folder_idx, file_idx) -> Tuple[str, int, str, int]:
-        range_folder = self.MAX_RANGE / len(folders)
+        range_folder = const.MAX_RANGE / len(folders)
         folder_range = range_folder * folder_idx
 
         range_file = range_folder / len(files)
@@ -81,7 +77,7 @@ class Images:
 
         rng = round(folder_range + file_range)
         if folder_idx >= len(folders) - 1 and file_idx >= len(files) - 1:
-            rng = self.MAX_RANGE + 1
+            rng = const.MAX_RANGE + 1
         elif folder_idx <= 0 and file_idx <= 0:
             rng = -1
 
@@ -89,10 +85,10 @@ class Images:
         return f'{self._events_path}/{folders[folder_idx]}/{f[1]}', int(f[0]), f'{folder_idx}.{file_idx}', rng
 
     def _get_by_range(self, rng: int, position: List[int]) -> Tuple[str, int, str, int]:
-        rng = min(max(rng, 0), self.MAX_RANGE - 1)
+        rng = min(max(rng, 0), const.MAX_RANGE - 1)
 
         folders = self._get_root_folders()
-        range_folder = self.MAX_RANGE / len(folders)
+        range_folder = const.MAX_RANGE / len(folders)
         folder_idx = int(rng / range_folder)
 
         files = self._get_files(folders[folder_idx])
@@ -104,7 +100,7 @@ class Images:
         return self._response(folders, files, folder_idx, file_idx)
 
     def _get_last(self) -> Tuple[str, int, str, int]:
-        return self._get_file(-1, self.MAX_RANGE + 1)
+        return self._get_file(-1, const.MAX_RANGE + 1)
 
     def _get_first(self) -> Tuple[str, int, str, int]:
         return self._get_file(0, -1)

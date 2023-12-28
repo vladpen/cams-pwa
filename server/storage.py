@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+import const
 from _config import Config
 from videos import Videos
 from share import Share
@@ -7,9 +8,6 @@ from log import Log
 
 
 class Storage:
-    DT_ROOT_FORMAT = '%Y-%m-%d'
-    DT_FORMAT = '%Y-%m-%d/%H/%M'
-
     def __init__(self, camera_hash):
         self._hash = camera_hash
         self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}'
@@ -28,7 +26,7 @@ class Storage:
     async def _start_saving(self, caller: str = '') -> None:
         """ We'll use system (linux) commands for this job
         """
-        await self._mkdir(datetime.now().strftime(self.DT_FORMAT))
+        await self._mkdir(datetime.now().strftime(const.DT_PATH_FORMAT))
 
         cfg = Config.cameras[self._hash]
         if 'storage_command' in cfg and cfg['storage_command']:
@@ -72,8 +70,8 @@ class Storage:
         if not self._start_time:
             return
 
-        prev_dir = f'{self._cam_path}/{(datetime.now() - timedelta(minutes=1)).strftime(self._videos.DT_FORMAT)}'
-        working_dir = f'{self._cam_path}/{datetime.now().strftime(self._videos.DT_FORMAT)}'
+        prev_dir = f'{self._cam_path}/{(datetime.now() - timedelta(minutes=1)).strftime(const.DT_PATH_FORMAT)}'
+        working_dir = f'{self._cam_path}/{datetime.now().strftime(const.DT_PATH_FORMAT)}'
         cmd = f'ls -l {prev_dir}/* {working_dir}/* | awk ' + "'{print $5,$9}'"
         p = await asyncio.create_subprocess_shell(
             cmd,
@@ -82,7 +80,7 @@ class Storage:
         stdout, _stderr = await p.communicate()
         res = stdout.decode().strip().splitlines()[-10:]
 
-        await self._mkdir((datetime.now() + timedelta(minutes=1)).strftime(self.DT_FORMAT))
+        await self._mkdir((datetime.now() + timedelta(minutes=1)).strftime(const.DT_PATH_FORMAT))
         await self._cleanup()
 
         self._live_motion_detector(res[:-1])
@@ -103,11 +101,11 @@ class Storage:
 
         # Remove previous folders if empty
         prev_min = datetime.now() - timedelta(minutes=1)
-        if not await self._remove_folder_if_empty(prev_min.strftime(self.DT_FORMAT)):
+        if not await self._remove_folder_if_empty(prev_min.strftime(const.DT_PATH_FORMAT)):
             return
-        if not await self._remove_folder_if_empty(prev_min.strftime(f'{self.DT_ROOT_FORMAT}/%H')):
+        if not await self._remove_folder_if_empty(prev_min.strftime(f'{const.DT_ROOT_FORMAT}/%H')):
             return
-        await self._remove_folder_if_empty(prev_min.strftime(self.DT_ROOT_FORMAT))
+        await self._remove_folder_if_empty(prev_min.strftime(const.DT_ROOT_FORMAT))
 
     def _live_motion_detector(self, file_list) -> None:
         cfg = Config.cameras[self._hash]
@@ -157,7 +155,7 @@ class Storage:
     async def _cleanup(self) -> None:
         """ Cleanup (once a day)
         """
-        now_date = datetime.now().strftime(self.DT_ROOT_FORMAT)
+        now_date = datetime.now().strftime(const.DT_ROOT_FORMAT)
         if self._last_rotation_date and self._last_rotation_date == now_date:
             return
         self._last_rotation_date = now_date
@@ -171,7 +169,7 @@ class Storage:
         if not stdout:
             return
 
-        oldest_folder = (datetime.now() - timedelta(days=Config.storage_period_days)).strftime(self.DT_ROOT_FORMAT)
+        oldest_folder = (datetime.now() - timedelta(days=Config.storage_period_days)).strftime(const.DT_ROOT_FORMAT)
 
         for row in stdout.decode().strip().split('\n'):
             wd = row.split('/')[-1]

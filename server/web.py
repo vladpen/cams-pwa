@@ -10,6 +10,7 @@ from socketserver import ThreadingMixIn, BaseServer
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from typing import Tuple
+import const
 from _config import Config
 from auth import Auth
 from videos import Videos
@@ -236,7 +237,7 @@ class Handler(BaseHTTPRequestHandler):
     def _get_bell_time(cam_hash) -> str:
         if cam_hash not in Share.cam_motions:
             return ''
-        last_bell_datetime = datetime.fromtimestamp(Share.cam_motions[cam_hash])
+        last_bell_datetime = datetime.strptime(Share.cam_motions[cam_hash], const.DT_WEB_FORMAT)
         if (datetime.now() - last_bell_datetime).total_seconds() > 43200:  # not older than 12 hours
             return ''
         return last_bell_datetime.strftime('%H:%M')
@@ -288,9 +289,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_error(403)
 
         try:
-            last_date_time = int(self._query['dt'][0])
+            last_date_time = self._query['dt'][0]
         except Exception as e:
-            last_date_time = 0
+            last_date_time = ''
             Log.write(f'Web bell: send query ERROR {repr(e)}')
 
         prev_motions = Share.cam_motions.copy()
