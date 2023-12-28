@@ -133,8 +133,7 @@ class Bell {
                     if (row.dt <= this._lastDateTime) {
                         return;  // continue forEach
                     }
-                    const date = new Date(row.dt * 1000);
-                    const hm = date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2);
+                    const hm = row.dt.slice(-6,-4) + ':' + row.dt.slice(-4,-2)
                     res.push(`<a href="/?page=cam&hash=${hash}">${row.name}</a><i>${hm}<i>`);
                     this._lastDateTime = row.dt;
                     this._updateNavList(hash, hm);
