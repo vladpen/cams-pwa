@@ -58,8 +58,10 @@ class Player extends Base {
 
     onRangeChange = val => { // release
         this._lock = false;
+        this._abortController.abort();
         this._video.play();
-        this._fetchArch(this._rangeUrl, { range: val });
+        this._datetime = '';  // prevent empty response & force loading
+        this._fetchArch(this._rangeUrl, { range: val }, null, true);
     }
 
     _onSourceOpen = () => {
