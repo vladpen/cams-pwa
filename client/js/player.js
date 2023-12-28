@@ -74,7 +74,7 @@ class Player extends Base {
     }
 
     _onTimeUpdate = () => {
-        if (this._lock || this._progress) {
+        if (this._lock || this._progress || this._sourceBuffer.timestampOffset - this._video.currentTime > 0) {
             return;
         }
         if (this._playMode == 'live') {
