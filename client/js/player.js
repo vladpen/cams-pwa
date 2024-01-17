@@ -39,7 +39,6 @@ class Player extends Base {
             return;
         }
         this._video.removeEventListener('timeupdate', this._onTimeUpdate);
-        this._abortController.abort();
         this._fetchArch(this._nextUrl, { step: step }, () => {
             this._video.play();
             this._video.addEventListener('timeupdate', this._onTimeUpdate);
@@ -49,6 +48,7 @@ class Player extends Base {
     onRangeDown = () => { // push down
         this._lock = true;
         this._abortController.abort();
+        clearTimeout(this._fetchTimeoutId);
     }
 
     onRangeInput = e => {
@@ -58,7 +58,6 @@ class Player extends Base {
 
     onRangeChange = val => { // release
         this._lock = false;
-        this._abortController.abort();
         this._video.play();
         this._datetime = '';  // prevent empty response & force loading
         this._fetchArch(this._rangeUrl, { range: val }, null, true);
@@ -79,11 +78,7 @@ class Player extends Base {
         if (this._lock || this._progress || this._sourceBuffer.timestampOffset - this._video.currentTime > 0) {
             return;
         }
-        if (this._playMode == 'live') {
-            this._fetch(this._liveUrl, {});
-        } else {
-            this._fetch(this._nextUrl, { step: 1 });
-        }
+        this._fetchRepeat();
     }
 
     _setCurrentTime = () => {
@@ -118,6 +113,14 @@ class Player extends Base {
         return url;
     }
 
+    _fetchRepeat = () => {
+        if (this._playMode == 'live') {
+            this._fetch(this._liveUrl);
+        } else {
+            this._fetch(this._nextUrl, { step: 1 });
+        }
+    }
+
     _fetchArch = (url, args, callback, force = false) => {
         this._playMode = 'arch';
         this._setTime = 1;
@@ -127,14 +130,19 @@ class Player extends Base {
         }
     }
 
-    _fetch = (url, args, callback = null, force = false) => {
+    _fetch = (url, args = {}, callback = null, force = false) => {
+        clearTimeout(this._fetchTimeoutId);
         if (!force && (this._progress || this._sourceBuffer.updating)) {
             return;
         }
-        url = this._getUrl(url, args);
         this._progress = true;
-        let datetime, rng;
+        if (this._abortController) {
+            this._abortController.abort();
+        }
         this._abortController = new AbortController();
+
+        url = this._getUrl(url, args);
+        let datetime, rng;
         fetch(url, {
             cache: 'no-store',
             signal: this._abortController.signal
@@ -145,15 +153,13 @@ class Player extends Base {
                 return r.arrayBuffer();
             })
             .then(data => {
-                if (!data.byteLength) { // retry after camera failure
-                    clearTimeout(this._fetchTimeoutId);
+                this._progress = false;
+                if (!data.byteLength) { // fetch next segment after camera failure or if the same segment received
                     this._fetchTimeoutId = window.setTimeout(() => {
-                        this._progress = false;
-                        this._fetch(url, args, callback, force);
+                        this._fetchRepeat();
                     }, 4000);
                     return;
                 }
-                this._progress = false;
                 delete window.frameLoading[this._hash];
                 if (!Object.keys(window.frameLoading).length) {
                     this.loader.classList.add('hidden');
