@@ -1,22 +1,23 @@
-import subprocess
 from typing import Tuple, List, Any, Dict
+
 import const
 from _config import Config
+from cmd import get_execute
 
 
 class Images:
     def __init__(self, camera_hash):
         self._hash = camera_hash
         self._cam_config = Config.cameras[self._hash]
-        self._events_path = f'{Config.events_path}/{self._cam_config["folder"]}'
+        self._events_path = f"{Config.events_path}/{self._cam_config['folder']}"
         self._root_folders = []
 
     def get_chart_data(self) -> List[int]:
         cnt = []
         for folder in self._get_root_folders():
             wd = f"{self._events_path}/{folder}"
-            cmd = f'ls {wd} | wc -l'
-            cnt.append(int(self._exec(cmd, 0)))
+            wd_count = get_execute(f'ls {wd} | wc -l')
+            cnt.append(int(wd_count) if wd_count else 0)
         return cnt
 
     def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int, str, int]:
@@ -69,6 +70,8 @@ class Images:
         return self._get_next(step, [folder_idx, file_idx])
 
     def _response(self, folders, files, folder_idx, file_idx) -> Tuple[str, int, str, int]:
+        if not files:
+            return '', 0, '', 0
         range_folder = const.MAX_RANGE / len(folders)
         folder_range = range_folder * folder_idx
 
@@ -88,7 +91,7 @@ class Images:
         rng = min(max(rng, 0), const.MAX_RANGE - 1)
 
         folders = self._get_root_folders()
-        range_folder = const.MAX_RANGE / len(folders)
+        range_folder = int(const.MAX_RANGE / len(folders))
         folder_idx = int(rng / range_folder)
 
         files = self._get_files(folders[folder_idx])
@@ -123,17 +126,9 @@ class Images:
     def _get_root_folders(self) -> List[str]:
         if self._root_folders:
             return self._root_folders
-        cmd = f'ls {self._events_path}'
-        self._root_folders = self._exec(cmd).splitlines()
+        self._root_folders = get_execute(f'ls {self._events_path}').splitlines()
         return self._root_folders
 
     def _get_files(self, folder: str) -> List[str]:
         wd = f"{self._events_path}/{folder}"
-        cmd = f'ls -l {wd} | awk ' + "'{print $5,$9}'"
-        return self._exec(cmd).splitlines()
-
-    @staticmethod
-    def _exec(cmd: str, default: Any = '') -> Any:
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True, shell=True)
-        stdout, _stderr = p.communicate()
-        return stdout.strip() or default
+        return get_execute(f'ls -l {wd} | awk ' + "'{print $5,$9}'").splitlines()

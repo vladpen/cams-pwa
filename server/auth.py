@@ -1,8 +1,7 @@
-import json
 import hashlib
 import subprocess
 from urllib.parse import quote_plus, unquote_plus
-from typing import Optional
+from typing import Dict, Optional
 from _config import Config
 from log import Log
 
@@ -14,8 +13,7 @@ class Auth:
     def info(self) -> Optional[str]:
         return self._info
 
-    def login(self, json_data: bytes) -> Optional[str]:
-        data = json.loads(json_data.decode('UTF-8'))
+    def login(self, data: Dict) -> Optional[str]:
         if 'psw' not in data or 'cam' not in data:
             return
         if data['cam'] != Config.master_cam_hash and data['cam'] not in Config.cameras:

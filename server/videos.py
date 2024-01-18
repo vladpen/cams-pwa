@@ -1,21 +1,21 @@
+import asyncio
 import re
-import subprocess
-import time
 from datetime import datetime, timedelta
 from typing import Tuple, List, Dict, Any, Optional
+
 import const
 from _config import Config
+from cmd import get_execute
 from log import Log
 
 
 class Videos:
     DEPTH = 3
-    MIN_FILE_SIZE = 1000
     MD_AVERAGE_LEN = 10
 
     def __init__(self, cam_hash: str):
         self._hash = cam_hash
-        self._cam_path = f'{Config.storage_path}/{Config.cameras[self._hash]["folder"]}'
+        self._cam_path = f"{Config.storage_path}/{Config.cameras[self._hash]['folder']}"
         self._range = const.MAX_RANGE
         self._root_folder = []
         self._date_time = ''
@@ -23,19 +23,19 @@ class Videos:
     def get_days(self) -> int:
         return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
 
-    def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int]:
+    async def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int]:
         date_time = args['dt'][0] if 'dt' in args else ''
 
         if args['video'][0] == 'next':
             step = int(args['step'][0]) if 'step' in args else 0
             sensitivity = int(args['md'][0]) if 'md' in args else -1
-            return self._get_next(step, date_time, sensitivity)
+            return await self._get_next(step, date_time, sensitivity)
 
         elif args['video'][0] == 'range':
             rng = int(args['range'][0]) if 'range' in args else const.MAX_RANGE
-            return self._get_by_range(rng)
+            return await self._get_by_range(rng)
 
-        return self._get_live(date_time)
+        return await self._get_live(date_time)
 
     def get_datetime_by_path(self, path: str) -> str:
         relative_path = path[len(self._cam_path) + 1:]
@@ -52,22 +52,22 @@ class Videos:
         ).total_seconds()
         return str(round(const.MAX_RANGE * delta_seconds / total_seconds))
 
-    def _get_live(self, date_time: Optional[str] = '') -> Tuple[str, int]:
+    async def _get_live(self, date_time: Optional[str] = '') -> Tuple[str, int]:
         self._range = const.MAX_RANGE + 1
 
         path, size = self._get_live_file()  # checks now and last minute folder
         if not size:
             fallback = (datetime.now() - timedelta(minutes=1)).strftime(const.DT_PATH_FORMAT).split('/')
-            return self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
+            return await self._find_nearest_file('/'.join(fallback[0:-1]), fallback[-1], -1)
 
         segment_date_time = self.get_datetime_by_path(path)
         if not date_time or segment_date_time > date_time or not Config.storage_enabled:
             return path, size
 
-        time.sleep(0.5)
-        return self._get_live(date_time)
+        await asyncio.sleep(0.5)
+        return await self._get_live(date_time)
 
-    def _get_by_range(self, rng: int) -> Tuple[str, int]:
+    async def _get_by_range(self, rng: int) -> Tuple[str, int]:
         rng = min(max(rng, 0), const.MAX_RANGE)
 
         start_date = self._get_start_date()
@@ -76,16 +76,16 @@ class Videos:
         wd = (start_date + timedelta(minutes=delta_minutes)).strftime(const.DT_PATH_FORMAT)
 
         parts = wd.split('/')
-        return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], 1)
+        return await self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], 1)
 
-    def _get_next(self, step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
+    async def _get_next(self, step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
         if not date_time:
-            return self._get_live()
+            return await self._get_live()
 
         self._date_time = date_time
 
         if sensitivity >= 0:
-            return self._get_next_motion(sensitivity, step)
+            return await self._get_next_motion(sensitivity, step)
 
         file_path = self._get_path_by_datetime(date_time)
         parts = file_path.split('/')
@@ -112,7 +112,7 @@ class Videos:
                 i += 1
                 if i < abs(step):
                     continue
-                if int(f[0]) > self.MIN_FILE_SIZE:
+                if int(f[0]) > const.MIN_FILE_SIZE:
                     return path, int(f[0])
 
         sign = 1 if step > 0 else -1
@@ -122,16 +122,16 @@ class Videos:
         ).strftime(const.DT_PATH_FORMAT)
 
         if step > 0 and folder > datetime.now().strftime(const.DT_PATH_FORMAT):
-            return self._get_live(date_time)
+            return await self._get_live(date_time)
 
         step = -2 if step < 0 else 1
         parts = folder.split('/')
-        return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)
+        return await self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)
 
     def _get_start_date(self) -> datetime:
         return datetime.strptime(self._get_folders()[0], const.DT_ROOT_FORMAT)
 
-    def _find_nearest_file(self, parent: str, folder: str, step: int) -> Tuple[str, int]:
+    async def _find_nearest_file(self, parent: str, folder: str, step: int) -> Tuple[str, int]:
         """ If folder is set shift left (to parent folder); else shift right (to child folder) """
         parts = parent.split('/') if parent else []
 
@@ -144,7 +144,7 @@ class Videos:
 
         folders = self._get_folders(parent)
         if not folders and len(parts) > 0:
-            return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)  # shift left
+            return await self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)  # shift left
 
         if folder:
             if step < 0:  # find the largest element of folders less than folder
@@ -153,24 +153,24 @@ class Videos:
                 rest = [i for i in folders if i > folder]
             if rest:
                 parts.append(max(rest) if step < 0 else min(rest))
-                return self._find_nearest_file('/'.join(parts), '', step)  # shift right
+                return await self._find_nearest_file('/'.join(parts), '', step)  # shift right
 
             if len(parts) > 0:
-                return self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)  # shift left
+                return await self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], step)  # shift left
             elif step < 0:
-                return self._find_nearest_file('', '', 1)  # move to the beginning
+                return await self._find_nearest_file('', '', 1)  # move to the beginning
             else:
-                return self._get_live()  # move to the end
+                return await self._get_live()  # move to the end
 
         if not folder and folders and len(parts) < self.DEPTH:
             parts.append(folders[-1]) if step < 0 else parts.append(folders[0])
-            return self._find_nearest_file('/'.join(parts), '', step)  # shift right
+            return await self._find_nearest_file('/'.join(parts), '', step)  # shift right
 
-        Log.print(f'find_nearest_file: not found: {parent}[/{folder}], step={step}')
+        Log.write(f'find_nearest_file: not found: {parent}[/{folder}], step={step}')
 
         return '', 0
 
-    def _get_next_motion(self, sensitivity: int, step: int) -> Tuple[str, int]:
+    async def _get_next_motion(self, sensitivity: int, step: int) -> Tuple[str, int]:
         sign = 1 if step > 0 else -1
         if step >= 60 or step <= -60:
             folder = (
@@ -190,30 +190,31 @@ class Videos:
                 f = file.split(' ')
                 last_files[f'{prev_folder}/{f[1]}'] = int(f[0])
 
-        return self._motion_detector(folder, last_files, 100 - max(0, min(90, sensitivity)), sign)
+        return await self._motion_detector(folder, last_files, 100 - max(0, min(90, sensitivity)), sign)
 
-    def _motion_detector(self, folder: str, last_files: Dict[str, int], sensitivity: int, sign: int) -> Tuple[str, int]:
+    async def _motion_detector(
+            self, folder: str, last_files: Dict[str, int], sensitivity: int, sign: int) -> Tuple[str, int]:
         requested_path = self._get_path_by_datetime(self._date_time)
         files = self._get_files(folder)
         if not files:
             if sign > 0 and folder >= self._get_folders()[-1]:
-                return self._get_live()
+                return await self._get_live()
             if sign < 0 and folder <= self._get_folders()[0]:
                 return '', 0
 
-            file = self._find_nearest_file(folder, '', sign)
+            file = await self._find_nearest_file(folder, '', sign)
             if file:
                 next_folder = '/'.join(file[0][len(self._cam_path) + 1:].split('/')[0:-1])
                 if (sign > 0 and next_folder <= folder) or (sign < 0 and next_folder >= folder):
                     return '', 0
-                return self._motion_detector(next_folder, last_files, sensitivity, sign)
+                return await self._motion_detector(next_folder, last_files, sensitivity, sign)
 
         sens = 1 + sensitivity / 100
         if sign < 0:
             files.reverse()
         for file in files:
             f = file.split(' ')
-            if float(f[0]) < self.MIN_FILE_SIZE:  # exclude broken files
+            if float(f[0]) < const.MIN_FILE_SIZE:  # exclude broken files
                 continue
             average_size = sum(last_files.values()) / len(last_files) if last_files else 0
 
@@ -231,37 +232,31 @@ class Videos:
                 return f'{self._cam_path}/{folder}/{f[1]}', int(f[0])
 
         if folder >= datetime.now().strftime(const.DT_PATH_FORMAT):
-            return self._get_live()
+            return await self._get_live()
 
         next_folder = (
             datetime.strptime(folder, const.DT_PATH_FORMAT) + timedelta(minutes=1) * sign
         ).strftime(const.DT_PATH_FORMAT)
 
-        return self._motion_detector(next_folder, last_files, sensitivity, sign)
+        return await self._motion_detector(next_folder, last_files, sensitivity, sign)
 
     def _get_folders(self, folder: str = '') -> List[str]:
         if not folder and self._root_folder:
             return self._root_folder
-        cmd = f'ls {self._cam_path}/{folder}'
-        res = self._exec(cmd).splitlines()
+        ls = get_execute(f'ls {self._cam_path}/{folder}').splitlines()
         if not folder:
-            self._root_folder = res
-        return res
+            self._root_folder = ls
+        return ls
 
     def _get_files(self, folder: str) -> List[str]:
         wd = f"{self._cam_path}/{folder}"
-        cmd = f'ls -l {wd} | awk ' + "'{print $5,$9}'"
-        res = self._exec(cmd)
-        if not res and folder and folder < datetime.now().strftime(const.DT_PATH_FORMAT):
-            self._exec(f'rmdir {self._cam_path}/{folder}')  # delete empty folder
-        return res.splitlines()
+        return get_execute(f'ls -l {wd} | awk ' + "'{print $5,$9}'").splitlines()
 
     def _get_files_by_folders(self, folders: List[str]) -> List[str]:
         paths = ''
         for folder in folders:
             paths = f'{paths}{self._cam_path}/{folder}/* '
-        cmd = f'ls -l {paths} | awk ' + "'{print $5,$9}'"
-        return self._exec(cmd).splitlines()
+        return get_execute(f'ls -l {paths} | awk ' + "'{print $5,$9}'").splitlines()
 
     def _get_file(self, folder: str, position: int = 0) -> Tuple[str, int]:
         files = self._get_files(folder)
@@ -270,7 +265,7 @@ class Videos:
         file = files[position].split()  # [size, file]
         path = f'{self._cam_path}/{folder}/{file[1]}'
         size = int(file[0])
-        if size > self.MIN_FILE_SIZE:
+        if size > const.MIN_FILE_SIZE:
             return path, size
         if position < 0 and len(files) > abs(position):
             return self._get_file(folder, position - 1)
@@ -283,7 +278,7 @@ class Videos:
         if len(files) > 1:
             file = files[position].split()  # [size, file]
             size = int(file[0])
-            if size < self.MIN_FILE_SIZE:
+            if size < const.MIN_FILE_SIZE:
                 return '', 0
 
             path = f'{self._cam_path}/{folder}/{file[1]}'
@@ -300,9 +295,3 @@ class Videos:
         if not re.match(r'^\d{14}$', dt):
             return ''
         return f'{dt[0:4]}-{dt[4:6]}-{dt[6:8]}/{dt[8:10]}/{dt[10:12]}/{dt[12:14]}.mp4'
-
-    @staticmethod
-    def _exec(cmd: str, default: Any = '') -> Any:
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True, shell=True)
-        stdout, _stderr = p.communicate()
-        return stdout.strip() or default
