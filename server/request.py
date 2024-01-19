@@ -10,13 +10,19 @@ from log import Log
 
 
 def listen_http() -> None:
-    Log.write(f'* Serving on https://{Config.web_server_host}:{Config.web_server_port}')
-    asyncio.run(_main())
+    if Config.ssl_certificate and Config.ssl_private_key:
+        scheme = 'https'
+        ctx = SSLContext(PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(Config.ssl_certificate, Config.ssl_private_key)
+    else:
+        scheme = 'http'
+        ctx = None
+
+    Log.write(f'* Serving on {scheme}://{Config.web_server_host}:{Config.web_server_port}')
+    asyncio.run(_main(ctx))
 
 
-async def _main():
-    ctx = SSLContext(PROTOCOL_TLS_SERVER)
-    ctx.load_cert_chain(Config.ssl_certificate, Config.ssl_private_key)
+async def _main(ctx) -> None:
     server = await asyncio.start_server(_handle, Config.web_server_host, Config.web_server_port, ssl=ctx)
     async with server:
         await server.serve_forever()
@@ -25,13 +31,13 @@ async def _main():
 async def _handle(reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter) -> None:
     raw_request = await _get_request(reader)
     start_line = raw_request.split('\n', 1)[0].strip()
-    peer_name = writer.get_extra_info('peername')
     host = ''
+    peer_name = writer.get_extra_info('peername')
 
     try:
-        request = await _parse_request(raw_request)
-        host = request['headers']['host'].split(':', 1)[0]
-        peer_name = peer_name[0]
+        request = await _parse_request(raw_request, peer_name[0])
+        host = request['headers']['host']
+        peer_name = request['headers']['x-real-ip']
 
         web = Web(writer, request)
         if request['method'] == 'POST':
@@ -59,7 +65,7 @@ async def _get_request(reader: asyncio.streams.StreamReader) -> str:
     return request
 
 
-async def _parse_request(raw_request: str) -> Dict:
+async def _parse_request(raw_request: str, peer_name: str) -> Dict:
     if not raw_request:
         raise Exception('Request: empty request')
 
@@ -69,16 +75,20 @@ async def _parse_request(raw_request: str) -> Dict:
     if len(start_line) < 3:
         raise Exception('Request: invalid start line')
 
-    request = {'method': start_line[0], 'uri': start_line[1], 'version': start_line[2]}
-    request['query'] = parse_qs(urlparse(request['uri']).query)  # GET params (dict)
-
+    request = {
+        'method': start_line[0],
+        'uri': start_line[1],
+        'version': start_line[2],
+        'headers': {},
+        'query': parse_qs(urlparse(start_line[1]).query),  # GET params (dict)
+        'body': ''
+    }
     if not request['version'].startswith('HTTP/'):
         raise Exception('Request: invalid version')
 
     if request['method'] not in ('GET', 'POST'):
         raise Exception('Request: method not allowed')
 
-    request['headers'] = {}
     for field in header_lines[1:]:
         if not field:
             continue
@@ -88,6 +98,11 @@ async def _parse_request(raw_request: str) -> Dict:
     for field in ['host', 'accept', 'user-agent']:
         if field not in request['headers']:
             raise Exception(f'Request: empty required field "{field}"')
+
+    request['headers']['host_name'] = ':'.join(request['headers']['host'].split(':')[:-1])
+
+    if 'x-real-ip' not in request['headers']:
+        request['headers']['x-real-ip'] = peer_name
 
     request['body'] = request_parts[1] if len(request_parts) > 1 else ''
     return request

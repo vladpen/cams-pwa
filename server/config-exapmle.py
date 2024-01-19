@@ -48,12 +48,13 @@ class Config:
     cam_password_hash = '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c'
     encryption_key = 'Secret Encryption Key'
 
-    # Path to VALID ssl certificates.
+    # Absolute path to VALID ssl certificates.
     # Use any service likes https://letsencrypt.org/
     # or create self-signed certificates, then import root one to your browser
     # (see README.md for details).
-    ssl_certificate = '/<path>/_localhost.crt'
-    ssl_private_key = '/<path>/_localhost.key'
+    # Leave blank if SSL is not required.
+    ssl_certificate = ''
+    ssl_private_key = ''
 
     # Check "storage_command" output, secs (int).
     # Used as the storage watchdog interval and motion detector one

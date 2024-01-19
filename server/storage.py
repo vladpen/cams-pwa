@@ -42,7 +42,8 @@ class Storage:
         Log.write(f'* Storage: {caller}: start main process {self.main_process.pid} for {self._hash}')
 
     def _mkdir(self, folder: str) -> None:
-        """ Create storage folder if not exists """
+        """ Create storage folder if not exists
+        """
         execute(f'mkdir -p {self._cam_path}/{folder}')
 
     def watchdog(self) -> None:

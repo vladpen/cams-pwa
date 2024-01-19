@@ -15,15 +15,15 @@ from log import Log
 
 
 class Web(Response):
-    """ Middleware (web request handler) """
-
-    def __init__(self, writer, request) -> None:
+    """ Middleware (web request handler)
+    """
+    def __init__(self, writer, request):
         super().__init__(writer, request)
         self.hash = None
 
     async def do_get(self) -> None:
-        """ Router. Possible GET params: ?<page|video|image|bell>=<val>[...]&hash=<hash>[...] """
-
+        """ Router. Possible GET params: ?<page|video|image|bell>=<val>[...]&hash=<hash>[...]
+        """
         if not self.request['query'] and self.request['uri'] != '/':
             return await self._send_static()
 
@@ -56,8 +56,8 @@ class Web(Response):
         raise RuntimeError('Web: invalid route')
 
     async def do_post(self) -> None:
-        """ Auth form handler """
-
+        """ Auth form handler
+        """
         auth_info = self.auth.login(json.loads(self.request['body']))
         if not auth_info:
             raise RuntimeError('Web: invalid post data', 403)
@@ -65,11 +65,11 @@ class Web(Response):
         self.headers = [f'Set-Cookie: {self._create_auth_cookie()}']
         Log.write(f'Web: logged in: {auth_info}')
 
-    def _get_client_type(self) -> str:
+    def _get_title(self) -> str:
         host = self.request['headers']['host']
         if host.startswith('192.168.') or host.startswith('127.0.') or host.startswith('localhost'):
-            return 'local'
-        return 'web'
+            return Config.title
+        return Config.web_title
 
     async def _send_static(self) -> None:
         static_file = self.request['uri']
@@ -85,8 +85,7 @@ class Web(Response):
             self.body = await Response.read_file(
                 f'{os_path.dirname(os_path.realpath(__file__))}/../client{static_file}')
             if static_file == '/cams.webmanifest':
-                title = Config.web_title if self._get_client_type() == 'web' else Config.title
-                self.body = self.body.replace(b'{title}', title.encode('UTF-8'))
+                self.body = self.body.replace(b'{title}', self._get_title().encode('UTF-8'))
 
         except Exception:
             raise RuntimeError('Web: static file not found', 404)
@@ -119,7 +118,7 @@ class Web(Response):
         tpl = (await Response.read_file(f'{os_path.dirname(os_path.realpath(__file__))}/../client{template}')).decode()
         content = content.replace('{content}', tpl)
 
-        title = Config.title
+        title = self._get_title()
         cams_list = {}
         bell_hidden = 'hidden'
         for cam_hash, cam in Config.cameras.items():
@@ -223,6 +222,8 @@ class Web(Response):
         self.body = await Response.read_file(file_path)
 
     async def _send_bell(self) -> None:
+        polling_timeout = 30  # secs
+
         if not self.auth.info():
             raise RuntimeError('Web: invalid bell auth', 403)
 
@@ -233,9 +234,9 @@ class Web(Response):
             Log.write(f'Web ERROR: invalid bell datetime ({repr(e)})')
 
         prev_motions = Share.cam_motions.copy()
-        cnt = 0
-        await asyncio.sleep(1)
+        cnt = 1
         while True:
+            await asyncio.sleep(1)
             res = {}
             for cam_hash, date_time in Share.cam_motions.items():
                 if self.auth.info() != Config.master_cam_hash and self.auth.info() != cam_hash:
@@ -246,9 +247,8 @@ class Web(Response):
                     continue
                 res[cam_hash] = {'dt': date_time, 'name': Config.cameras[cam_hash]['name']}
 
-            cnt += 1
-            if not res and cnt < 60:
-                await asyncio.sleep(1)
+            if not res and cnt < polling_timeout:
+                cnt += 1
                 continue
 
             self.headers = [

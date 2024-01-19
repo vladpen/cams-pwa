@@ -7,7 +7,7 @@ from log import Log
 
 
 class Response:
-    def __init__(self, writer: asyncio.streams.StreamWriter, request: Dict) -> None:
+    def __init__(self, writer: asyncio.streams.StreamWriter, request: Dict):
         self.writer = writer
         self.request = request
         self.cookie = SimpleCookie()
@@ -30,15 +30,15 @@ class Response:
         Log.write(f'Request {msg} {code} ERROR ({error})')
 
     async def send(self, headers: List, content: bytes, request_start_line: str) -> None:
-        peer_name = self.writer.get_extra_info('peername')
         headers = ['HTTP/1.1 200 OK'] + headers + ['', '']
         headers = ('\r\n'.join(headers)).encode('UTF-8')
         self.writer.write(headers + content)
         await self.writer.drain()
         self.writer.close()
 
-        host = ':'.join(self.request['headers']['host'].split(':')[:-1])
-        Log.write(f'Request {peer_name[0]} > {host} "{request_start_line}" 200')
+        peer_name = self.request['headers']['x-real-ip']
+        host = self.request['headers']['host_name']
+        Log.write(f'Request {peer_name} > {host} "{request_start_line}" 200')
 
     @staticmethod
     async def read_file(filename: str) -> bytes:

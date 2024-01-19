@@ -37,32 +37,11 @@
 
 Скопируйте файл конфигурации server/config-example.py в "приватный" файл server/_config.py и отредактируйте его, следуя комментариям.
 
-Для работы PWA (прогрессивного веб приложения) требуется валидный SSL сертификат.
-Для тестирования в локальной сети можно создать самозаверенный сертификат, например так:
-```bash
-sudo openssl genrsa -out rootCA.key 4096
-sudo openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 \
-    -subj "/C=ХХ/L=Nsk/O=R&K/OU=R&K/CN=R&K" -out rootCA.crt
-sudo chown $(whoami):$(whoami) rootCA.key
-openssl genrsa -out localhost.key 2048
-openssl req -new -sha256 -key localhost.key \
-    -subj "/C=ХХ/L=Nsk/O=localhost/OU=localhost/CN=localhost" -out localhost.csr
-openssl x509 -req -sha256 -in localhost.csr -out localhost.crt -days 3650 \
-    -CAkey rootCA.key -CA rootCA.crt -CAcreateserial -extensions SAN \
-    -extfile <(printf "[SAN]\nsubjectAltName=DNS:localhost,DNS:ваш-домен,IP:127.0.0.1,IP:ваш-ip")
-sudo chown root:root rootCA.key
-```
-
-В этом случае корневой сертификат rootCA.crt следует импортировать в браузер в разделе
-chrome://settings/security — Настроить сертификаты — Центры сертификации — Импорт
-
-На мобильных устройствах корневой сертификат импортируется в разделе "Безопасность" в настройках системы.
-
-Теперь можно запустить сервер
+После этого можно запустить сервер
 ```bash
 python3 server/main.py
 ```
-и в браузере зайти на указанный адрес, например https://localhost:8000 (по умолчанию).
+и в браузере зайти на указанный адрес, например http://localhost:8000 (по умолчанию).
 
 ### Автоматический запуск сервера во время загрузки
 
@@ -88,6 +67,37 @@ sudo systemctl daemon-reload
 sudo systemctl enable cams-pwa
 sudo systemctl start cams-pwa
 ```
+
+### SSL сертификат (необязательно)
+
+Для работы PWA (прогрессивного веб приложения) требуется валидный SSL сертификат.
+Также настоятельно рекомендуется работать в интернете только по защищённому протоколу HTTPS.
+
+Но в некоторых случаях, например при проксировании через фронтенд-сервер nginx,
+приложение может работать по протоколу HTTP.
+В таком случае просто пропустите этот раздел и оставьте поля ssl в конфигурации пустыми.
+
+Получить бесплатный сертификат можно в [центре сертификации Let's Encrypt](https://letsencrypt.org/ru/).
+Для тестирования в локальной сети можно создать самозаверенный сертификат, например так:
+```bash
+sudo openssl genrsa -out rootCA.key 4096
+sudo openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 \
+    -subj "/C=ХХ/L=Nsk/O=R&K/OU=R&K/CN=R&K" -out rootCA.crt
+sudo chown $(whoami):$(whoami) rootCA.key
+openssl genrsa -out localhost.key 2048
+openssl req -new -sha256 -key localhost.key \
+    -subj "/C=ХХ/L=Nsk/O=localhost/OU=localhost/CN=localhost" -out localhost.csr
+openssl x509 -req -sha256 -in localhost.csr -out localhost.crt -days 3650 \
+    -CAkey rootCA.key -CA rootCA.crt -CAcreateserial -extensions SAN \
+    -extfile <(printf "[SAN]\nsubjectAltName=DNS:localhost,DNS:ваш-домен,IP:127.0.0.1,IP:ваш-ip")
+sudo chown root:root rootCA.key
+```
+
+В этом случае корневой сертификат rootCA.crt следует импортировать в браузер в разделе
+chrome://settings/security — Настроить сертификаты — Центры сертификации — Импорт
+
+На мобильных устройствах корневой сертификат импортируется в разделе "Безопасность" в настройках системы.
+
 
 ### Интерфейс
 
