@@ -82,6 +82,9 @@ class Player extends Base {
     }
 
     _setCurrentTime = () => {
+        if (!this._video.seekable.length) {
+            return;
+        }
         this._video.currentTime = this._video.seekable.end(this._video.seekable.length - 1);
     }
 
@@ -111,6 +114,12 @@ class Player extends Base {
             url += '&md=' + this.motionRange.value;
         }
         return url;
+    }
+
+    _fetchFallback = () => {
+        this._fetchTimeoutId = window.setTimeout(() => {
+            this._fetchRepeat();
+        }, 4000);
     }
 
     _fetchRepeat = () => {
@@ -155,10 +164,7 @@ class Player extends Base {
             .then(data => {
                 this._progress = false;
                 if (!data.byteLength) { // fetch next segment after camera failure or if the same segment received
-                    this._fetchTimeoutId = window.setTimeout(() => {
-                        this._fetchRepeat();
-                    }, 4000);
-                    return;
+                    return this._fetchFallback();
                 }
                 delete window.frameLoading[this._hash];
                 if (!Object.keys(window.frameLoading).length) {
@@ -180,8 +186,9 @@ class Player extends Base {
                     this._setCurrentTime();
                 }
             })
-            .catch(error => {
+            .catch(error => { // retry after network failure
                 this._progress = false;
+                return this._fetchFallback();
             });
     }
 }
