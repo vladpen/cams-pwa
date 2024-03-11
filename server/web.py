@@ -200,7 +200,7 @@ class Web(Response):
             self.headers = [
                 'Content-Type: video/mp4',
                 f'Content-Length: {str(file_size)}',
-                f'Cache-Control: no-store',
+                'Cache-Control: no-store',
                 f'X-Datetime: {file_date_time}',
                 f'X-Range: {videos.get_range_by_path(file_path)}',
             ]

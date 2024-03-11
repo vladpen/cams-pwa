@@ -52,7 +52,11 @@ class Videos:
         ).total_seconds()
         return str(round(const.MAX_RANGE * delta_seconds / total_seconds))
 
-    async def _get_live(self, date_time: Optional[str] = '') -> Tuple[str, int]:
+    async def _get_live(self, date_time: Optional[str] = '', cnt: int = 0) -> Tuple[str, int]:
+        cnt += 1
+        if cnt > 20:  # 20 * 0.5 = 10 sec max (avoid "gateway timeout" error)
+            return '', 0
+
         self._range = const.MAX_RANGE + 1
 
         path, size = self._get_live_file()  # checks now and last minute folder
@@ -65,7 +69,7 @@ class Videos:
             return path, size
 
         await asyncio.sleep(0.5)
-        return await self._get_live(date_time)
+        return await self._get_live(date_time, cnt)
 
     async def _get_by_range(self, rng: int) -> Tuple[str, int]:
         rng = min(max(rng, 0), const.MAX_RANGE)
