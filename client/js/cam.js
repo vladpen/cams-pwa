@@ -149,7 +149,6 @@ class Cam extends Base {
         for (const e of this.footer.querySelectorAll('.arch')) {
             e.classList.remove('disabled');
         }
-        this.loader.classList.remove('hidden');
         document.body.classList.add('arch');
     }
 

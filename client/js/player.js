@@ -14,7 +14,7 @@ class Player extends Base {
         this._sourceBuffer;
         this._sourceType = `video/mp4; codecs="${camInfo['codecs']}"`;
         this._mediaSource = new MediaSource();
-        this._fetchTimeoutId;
+        this._networkState = true;
     }
 
     start = () => {
@@ -32,6 +32,7 @@ class Player extends Base {
             window.frameLoading = {};
         }
         window.frameLoading[this._hash] = 1;
+        setInterval(this._watchdog, 1000);
     }
 
     seek = step => {
@@ -48,7 +49,7 @@ class Player extends Base {
     onRangeDown = () => { // push down
         this._lock = true;
         this._abortController.abort();
-        clearTimeout(this._fetchTimeoutId);
+        this._progress = false;
     }
 
     onRangeInput = e => {
@@ -59,7 +60,6 @@ class Player extends Base {
     onRangeChange = val => { // release
         this._lock = false;
         this._video.play();
-        this._datetime = '';  // prevent empty response & force loading
         this._fetchArch(this._rangeUrl, { range: val }, null, true);
     }
 
@@ -75,7 +75,10 @@ class Player extends Base {
     }
 
     _onTimeUpdate = () => {
-        if (this._lock || this._progress || this._sourceBuffer.timestampOffset - this._video.currentTime > 0) {
+        if (this._lock ||
+            this._progress ||
+            !this._networkState ||
+            this._sourceBuffer.timestampOffset - this._video.currentTime > 0) {
             return;
         }
         this._fetchRepeat();
@@ -105,6 +108,13 @@ class Player extends Base {
         }
     }
 
+    _watchdog = () => {
+        if (this._lock || this._progress || this._video.paused || this._video.readyState > 2) {
+            return;
+        }
+        this._fetchRepeat();
+    }
+
     _getUrl = (url, args = {}) => {
         Object.entries(args).forEach(([key, val]) => {
             url = url.replace('{' + key + '}', val);
@@ -114,12 +124,6 @@ class Player extends Base {
             url += '&md=' + this.motionRange.value;
         }
         return url;
-    }
-
-    _fetchFallback = () => {
-        this._fetchTimeoutId = window.setTimeout(() => {
-            this._fetchRepeat();
-        }, 4000);
     }
 
     _fetchRepeat = () => {
@@ -137,58 +141,68 @@ class Player extends Base {
         for (const e of this.footer.querySelectorAll('.arch')) {
             e.classList.remove('disabled');
         }
+        this.loader.classList.remove('hidden');
     }
 
     _fetch = (url, args = {}, callback = null, force = false) => {
-        clearTimeout(this._fetchTimeoutId);
-        if (!force && (this._progress || this._sourceBuffer.updating)) {
+        if (!force && this._progress) {
             return;
         }
-        this._progress = true;
         if (this._abortController) {
             this._abortController.abort();
         }
         this._abortController = new AbortController();
+        this._progress = true;
 
-        url = this._getUrl(url, args);
         let datetime, rng;
-        fetch(url, {
+
+        fetch(this._getUrl(url, args), {
             cache: 'no-store',
             signal: this._abortController.signal
         })
-            .then(r => {
-                datetime = r.headers.get('x-datetime');
-                rng = r.headers.get('x-range');
-                return r.arrayBuffer();
-            })
-            .then(data => {
-                this._progress = false;
-                if (!data.byteLength) { // fetch next segment after camera failure or if the same segment received
-                    return this._fetchFallback();
+        .then(r => {
+            datetime = r.headers.get('x-datetime');
+            rng = r.headers.get('x-range');
+            return r.arrayBuffer();
+        })
+        .then(data => {
+            this._progress = false;
+            this._networkState = true;
+
+            delete window.frameLoading[this._hash];
+            if (!Object.keys(window.frameLoading).length) {
+                this.loader.classList.add('hidden');
+            }
+            if (!data.byteLength) {
+                if (this._playMode == 'live') { // camera failure, wait for watchdog
+                    return;
                 }
-                delete window.frameLoading[this._hash];
-                if (!Object.keys(window.frameLoading).length) {
-                    this.loader.classList.add('hidden');
-                }
-                this._sourceBuffer.appendBuffer(data);
-                this._datetime = datetime;
-                if (this._playMode != 'live' && rng > this.MAX_RANGE) {
-                    this._setLiveMode();
-                }
-                if (this.timeRange && !this._lock) {
-                    this.timeRange.value = rng;
-                }
-                if (callback) {
-                    callback();
-                }
-                if (this._setTime > 0) {
-                    this._setTime -= 1;
-                    this._setCurrentTime();
-                }
-            })
-            .catch(error => { // retry after network failure
-                this._progress = false;
-                return this._fetchFallback();
-            });
+                // the same segment received (on rangeChange), fetch next one immediately
+                return this._fetch(this._nextUrl, { step: 1 });
+            }
+            this._sourceBuffer.appendBuffer(data);
+
+            this._datetime = datetime;
+            if (this._playMode != 'live' && rng > this.MAX_RANGE) {
+                this._setLiveMode();
+            }
+            if (this.timeRange && !this._lock) {
+                this.timeRange.value = rng;
+            }
+            if (callback) {
+                callback();
+            }
+            if (this._setTime > 0) {
+                this._setTime -= 1;
+                this._setCurrentTime();
+            }
+        })
+        .catch(e => { // user abort or network failure
+            if (e.name == 'AbortError') {
+                return; // abort signal means that new fetch is in progress, do nothing
+            }
+            this._progress = false; // network failure, wait for watchdog
+            this._networkState = false;
+        });
     }
 }
