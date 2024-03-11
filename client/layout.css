@@ -8,6 +8,11 @@ form label {display: block;}
 form input {width: 95%;}
 form input, form button {font-size: 1em;}
 form input.error {background: #fd7;}
+.auth-label svg, .auth-btn svg {fill: #fff; stroke: #fff; stroke-linecap: round; stroke-linejoin: round;}
+.auth-label svg {width: 1em; height: 1em;}
+.auth-btn { padding: 1em; border: none; background: transparent; cursor: pointer;}
+.auth-btn:hover svg { stroke: #7f7; }
+.auth-btn svg {width: 2em; height: 2em; vertical-align: middle;}
 .video-box {margin: 0; position: relative; aspect-ratio: 16/9;}
 .video-box video {width: 100%; display: block; position: absolute; z-index: 1;}
 .video-box div {width: 100%; height: 100%; background: rgba(255, 255, 255, 0.4); position: absolute; z-index: 2;}
