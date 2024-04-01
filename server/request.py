@@ -100,6 +100,8 @@ async def _parse_request(raw_request: str, peer_name: str) -> Dict:
             raise Exception(f'Request: empty required field "{field}"')
 
     request['headers']['host_name'] = ':'.join(request['headers']['host'].split(':')[:-1])
+    if not request['headers']['host_name']:
+        request['headers']['host_name'] = request['headers']['host']
 
     if 'x-real-ip' not in request['headers']:
         request['headers']['x-real-ip'] = peer_name

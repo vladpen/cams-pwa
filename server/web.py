@@ -2,6 +2,7 @@ import asyncio
 import re
 import json
 import mimetypes
+import subprocess
 from os import path as os_path
 from datetime import datetime
 
@@ -67,7 +68,17 @@ class Web(Response):
 
     def _get_title(self) -> str:
         host = self.request['headers']['host']
-        if host.startswith('192.168.') or host.startswith('127.0.') or host.startswith('localhost'):
+        client_ip = self.request['headers']['x-real-ip']
+        gateway_ip = Network.get_default_gateway_ip()
+
+        if client_ip == gateway_ip:  # cloud connection via router, e.g. KeenDNS
+            return Config.web_title
+
+        local_network_id = '192.168.'
+        if gateway_ip:
+            local_network_id = re.sub(r'([.:])\d+$', r'\1', gateway_ip)  # i.g. "192.168.0."
+
+        if client_ip.startswith(local_network_id) or host.startswith('127.0.') or host.startswith('localhost'):
             return Config.title
         return Config.web_title
 
@@ -256,3 +267,18 @@ class Web(Response):
             ]
             self.body = json.dumps(res).encode('UTF-8')
             return
+
+
+class Network:
+    _default_gateway_ip = ''
+
+    @staticmethod
+    def get_default_gateway_ip() -> str:
+        if Network._default_gateway_ip:
+            return Network._default_gateway_ip
+        try:
+            Network._default_gateway_ip = subprocess.run(
+                'ip route | grep default', shell=True, capture_output=True
+            ).stdout.decode().split(' ')[2]
+        finally:
+            return Network._default_gateway_ip

@@ -38,7 +38,6 @@ class Config:
 
     web_server_host = '0.0.0.0'
     web_server_port = 8000
-    web_server_name = 'Cams PWA'
 
     master_cam_hash = 'master cam hash'
     # Use hashlib.sha256(b"my_secret_password").hexdigest() to encode "my_secret_password"
