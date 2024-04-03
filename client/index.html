@@ -27,9 +27,13 @@
     for (const [key, val] of Object.entries({cams})) {
         appendRow(key, val, 'cam');
     }
-    for (const [key, val] of Object.entries({groups})) {
-        appendRow(key, val, 'group');
-    }
-    Bell.run();
     sessionStorage.removeItem('group_hash');
+    if (!{is_system_busy}) {
+        for (const [key, val] of Object.entries({groups})) {
+            appendRow(key, val, 'group');
+        }
+        Bell.run();
+    } else {
+        document.querySelector('header .end-box').remove();
+    }
 </script>

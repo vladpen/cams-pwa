@@ -2,7 +2,6 @@ import asyncio
 import re
 import json
 import mimetypes
-import subprocess
 from os import path as os_path
 from datetime import datetime
 
@@ -69,7 +68,7 @@ class Web(Response):
     def _get_title(self) -> str:
         host = self.request['headers']['host']
         client_ip = self.request['headers']['x-real-ip']
-        gateway_ip = Network.get_default_gateway_ip()
+        gateway_ip = Share.get_default_gateway_ip()
 
         if client_ip == gateway_ip:  # cloud connection via router, e.g. KeenDNS
             return Config.web_title
@@ -190,7 +189,7 @@ class Web(Response):
             ).replace(
                 '{chart_data}', json.dumps(images.get_chart_data())
             )
-        content = content.replace('{bell_hidden}', bell_hidden)
+        content = content.replace('{bell_hidden}', bell_hidden).replace('{is_system_busy}', Share.is_system_busy())
         return content.replace('{title}', title)
 
     @staticmethod
@@ -267,18 +266,3 @@ class Web(Response):
             ]
             self.body = json.dumps(res).encode('UTF-8')
             return
-
-
-class Network:
-    _default_gateway_ip = ''
-
-    @staticmethod
-    def get_default_gateway_ip() -> str:
-        if Network._default_gateway_ip:
-            return Network._default_gateway_ip
-        try:
-            Network._default_gateway_ip = subprocess.run(
-                'ip route | grep default', shell=True, capture_output=True
-            ).stdout.decode().split(' ')[2]
-        finally:
-            return Network._default_gateway_ip

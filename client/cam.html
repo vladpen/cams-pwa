@@ -85,5 +85,10 @@
 <script>
     const cam = new Cam(document.querySelector('video'), {cam_info}, {days});
     cam.run();
-    Bell.run();
+    if (!{is_system_busy}) {
+        Bell.run();
+    } else {
+        document.querySelector('footer').remove();
+        document.querySelector('header .end-box').remove();
+    }
 </script>

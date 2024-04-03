@@ -86,6 +86,12 @@ class Config:
     storage_period_days = 3
     events_period_days = 30
 
+    # Disable some web interface controls to prevent high file system load.
+    # For example, if a certain program is running or during high CPU load.
+    # Here you can use any system command that returns a non-empty string, e.g. "pgrep <app_name>".
+    # Leave this variable empty to skip.
+    is_system_busy_command = ''
+
     # Debug options
     debug = False
     storage_enabled = True
