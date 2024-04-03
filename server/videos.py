@@ -5,7 +5,7 @@ from typing import Tuple, List, Dict, Any, Optional
 
 import const
 from _config import Config
-from cmd import get_execute
+from execute import get_execute
 from log import Log
 
 

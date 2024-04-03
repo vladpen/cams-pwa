@@ -5,7 +5,7 @@ from typing import List
 
 import const
 from _config import Config
-from cmd import execute_async, execute, get_execute
+from execute import execute_async, execute, get_execute
 from share import Share
 from log import Log
 

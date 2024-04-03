@@ -2,7 +2,7 @@ from typing import Tuple, List, Any, Dict
 
 import const
 from _config import Config
-from cmd import get_execute
+from execute import get_execute
 
 
 class Images:
