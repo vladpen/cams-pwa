@@ -3,11 +3,10 @@ import re
 import json
 import mimetypes
 from os import path as os_path
-from datetime import datetime
 
-import const
 from _config import Config
 from response import Response
+from render import Render
 from videos import Videos
 from images import Images
 from share import Share
@@ -28,7 +27,7 @@ class Web(Response):
             return await self._send_static()
 
         if not self.request['query'] and self.request['uri'] == '/':
-            return await self._send_page()  # index page
+            return await self._send_page()  # home page
 
         if 'bell' in self.request['query']:
             return await self._send_bell()
@@ -81,6 +80,11 @@ class Web(Response):
             return Config.title
         return Config.web_title
 
+    def _create_auth_cookie(self) -> str:
+        return (
+            f'auth={self.auth.encrypt(self.auth.info())}; '
+            'Path=/; Max-Age=3456000; Secure; HttpOnly; SameSite=Lax')
+
     async def _send_static(self) -> None:
         static_file = self.request['uri']
         if not re.search(r'^/([a-z]+/)*[a-z\d._]+$', static_file):
@@ -101,105 +105,16 @@ class Web(Response):
             raise RuntimeError('Web: static file not found', 404)
 
     async def _send_page(self) -> None:
-        page = self.request['query']['page'][0] if self.request['query'] else 'index'
-        if page not in ['index', 'cam', 'group', 'events']:
-            raise RuntimeError('Web: invalid page')
-
-        template = f'/{page}.html'
+        page = self.request['query']['page'][0] if self.request['query'] else 'home'
         if not self.auth.info():
-            template = '/auth.html'
+            page = 'auth'
 
-        self.body = (
-            await Response.read_file(f'{os_path.dirname(os_path.realpath(__file__))}/../client/layout.html')
-        ).decode()
-
-        self.headers = ['Content-Type: text/html; charset=utf-8']  # , 'Cache-Control: max-age=604800'
+        self.headers = ['Content-Type: text/html; charset=utf-8']
         if self.auth.info():
             self.headers.append(f'Set-Cookie: {self._create_auth_cookie()}')
 
-        self.body = (await self._replace_template(template, self.body)).encode('UTF-8')
-
-    def _create_auth_cookie(self) -> str:
-        return (
-            f'auth={self.auth.encrypt(self.auth.info())}; '
-            'Path=/; Max-Age=3456000; Secure; HttpOnly; SameSite=Lax')
-
-    async def _replace_template(self, template: str, content: str) -> str:
-        tpl = (await Response.read_file(f'{os_path.dirname(os_path.realpath(__file__))}/../client{template}')).decode()
-        content = content.replace('{content}', tpl)
-
-        title = self._get_title()
-        cams_list = {}
-        bell_hidden = 'hidden'
-        for cam_hash, cam in Config.cameras.items():
-            if self.auth.info() == Config.master_cam_hash or self.auth.info() == cam_hash:
-                cams_list[cam_hash] = {
-                    'name': cam['name'],
-                    'codecs': cam['codecs'],
-                    'sensitivity': cam['sensitivity'],
-                    'events': cam['events'],
-                    'bell': self._get_bell_time(cam_hash)}
-                if cam['sensitivity'] or cam['events']:
-                    bell_hidden = ''
-
-        if template == '/index.html':
-            groups_list = {}
-            if hasattr(Config, 'groups'):
-                for k, v in Config.groups.items():
-                    if self.auth.info() == Config.master_cam_hash:
-                        groups_list[k] = {'name': v['name']}
-
-            content = content.replace(
-                '{cams}', json.dumps(cams_list)
-            ).replace(
-                '{groups}', json.dumps(groups_list)
-            )
-        elif template == '/cam.html':
-            if self.hash not in cams_list:
-                return ''
-            videos = Videos(self.hash)
-            cam = Config.cameras[self.hash]
-            title = cam['name']
-            events_hidden = 'hidden' if not cams_list[self.hash]['events'] else ''
-            content = content.replace(
-                '{days}', json.dumps(videos.get_days())
-            ).replace(
-                '{cam_info}', json.dumps(cams_list[self.hash])
-            ).replace(
-                '{events_hidden}', events_hidden
-            )
-        elif template == '/group.html':
-            cams = {}
-            for cam_hash in Config.groups[self.hash]['cams']:
-                if cam_hash in cams_list:
-                    cams[cam_hash] = cams_list[cam_hash]
-            if hasattr(Config, 'groups'):
-                title = Config.groups[self.hash]['name']
-            content = content.replace(
-                '{cams}', json.dumps(cams)
-            )
-        elif template == '/events.html':
-            if self.hash not in cams_list:
-                return ''
-            images = Images(self.hash)
-            cam = Config.cameras[self.hash]
-            title = cam['name']
-            content = content.replace(
-                '{cam_info}', json.dumps(cams_list[self.hash])
-            ).replace(
-                '{chart_data}', json.dumps(images.get_chart_data())
-            )
-        content = content.replace('{bell_hidden}', bell_hidden).replace('{is_system_busy}', Share.is_system_busy())
-        return content.replace('{title}', title)
-
-    @staticmethod
-    def _get_bell_time(cam_hash) -> str:
-        if cam_hash not in Share.cam_motions:
-            return ''
-        last_bell_datetime = datetime.strptime(Share.cam_motions[cam_hash], const.DT_WEB_FORMAT)
-        if (datetime.now() - last_bell_datetime).total_seconds() > 43200:  # not older than 12 hours
-            return ''
-        return last_bell_datetime.strftime('%H:%M')
+        render = Render(self._get_title(), self.hash, self.auth.info())
+        self.body = (await render.get_html(page)).encode('UTF-8')
 
     async def _send_segment(self) -> None:
         videos = Videos(self.hash)
