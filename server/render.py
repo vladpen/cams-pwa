@@ -32,12 +32,10 @@ class Render:
 
         self._prepare_context()  # set self.cams & self.bell_hidden
 
-        layout = (
-            await Response.read_file(f'{os_path.dirname(os_path.realpath(__file__))}/../client/layout.html')
-        ).decode()
-        template = (
-            await Response.read_file(f'{os_path.dirname(os_path.realpath(__file__))}/../client/{page}.html')
-        ).decode()
+        layout = await _read_file('layout.html')
+        template = await _read_file(f'{page}.html')
+        template = await _replace_include(template)
+
         html = layout.replace('{content}', template)
 
         render = getattr(self, method_name)
@@ -61,18 +59,9 @@ class Render:
                 'codecs': cam['codecs'],
                 'sensitivity': cam['sensitivity'],
                 'events': cam['events'],
-                'bell': self._get_bell_time(cam_hash)}
+                'bell': _get_bell_time(cam_hash)}
             if cam['sensitivity'] or cam['events']:
                 self.bell_hidden = ''
-
-    @staticmethod
-    def _get_bell_time(cam_hash) -> str:
-        if cam_hash not in Share.cam_motions:
-            return ''
-        last_bell_datetime = datetime.strptime(Share.cam_motions[cam_hash], const.DT_WEB_FORMAT)
-        if (datetime.now() - last_bell_datetime).total_seconds() > 43200:  # not older than 12 hours
-            return ''
-        return last_bell_datetime.strftime('%H:%M')
 
     def _render_home(self) -> Dict[str, str]:
         groups = {}
@@ -122,3 +111,33 @@ class Render:
 
     def _render_auth(self) -> Dict[str, str]:
         return {'title': self.title}
+
+
+async def _read_file(file_name: str):
+    return (
+        await Response.read_file(f'{os_path.dirname(os_path.realpath(__file__))}/../client/{file_name}')
+    ).decode()
+
+
+async def _replace_include(html: str):
+    match = re.findall(r'\{include\([^\)]+\)\}', html)
+    if not match:
+        return html
+
+    for include in match:
+        file = re.search(r'\([a-z\-]+\.[a-z]+\)', include)
+        if not file:
+            continue
+        block_content = await _read_file(file.group(0)[1:-1])
+        html = html.replace(include, block_content)
+
+    return html
+
+
+def _get_bell_time(cam_hash) -> str:
+    if cam_hash not in Share.cam_motions:
+        return ''
+    last_bell_datetime = datetime.strptime(Share.cam_motions[cam_hash], const.DT_WEB_FORMAT)
+    if (datetime.now() - last_bell_datetime).total_seconds() > 43200:  # not older than 12 hours
+        return ''
+    return last_bell_datetime.strftime('%H:%M')
