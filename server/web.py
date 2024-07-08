@@ -113,7 +113,7 @@ class Web(Response):
         if self.auth.info():
             self.headers.append(f'Set-Cookie: {self._create_auth_cookie()}')
 
-        render = Render(self._get_title(), self.hash, self.auth.info())
+        render = Render(self._get_title(), self.hash, self.auth.info(), self.request['headers']['x-language'])
         self.body = (await render.get_html(page)).encode('UTF-8')
 
     async def _send_segment(self) -> None:

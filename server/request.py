@@ -99,12 +99,23 @@ async def _parse_request(raw_request: str, peer_name: str) -> Dict:
         if field not in request['headers']:
             raise Exception(f'Request: empty required field "{field}"')
 
-    request['headers']['host_name'] = ':'.join(request['headers']['host'].split(':')[:-1])
-    if not request['headers']['host_name']:
-        request['headers']['host_name'] = request['headers']['host']
+    request['headers']['x-host'] = ':'.join(request['headers']['host'].split(':')[:-1])
+    if not request['headers']['x-host']:
+        request['headers']['x-host'] = request['headers']['host']
 
     if 'x-real-ip' not in request['headers']:
         request['headers']['x-real-ip'] = peer_name
 
+    request['headers']['x-language'] = _get_lang(request['headers'])
+
     request['body'] = request_parts[1] if len(request_parts) > 1 else ''
     return request
+
+
+def _get_lang(headers):
+    lang = 'en'
+    if 'accept-language' in headers:
+        lang = headers['accept-language'].split(',', 1)[0].split('-', 1)[0]
+    if not re.search(r'^[a-z]{2,3}$', lang):
+        lang = 'en'
+    return lang

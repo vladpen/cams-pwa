@@ -1,5 +1,6 @@
 import re
 import json
+import gettext
 from os import path as os_path
 from typing import Dict
 from datetime import datetime
@@ -13,10 +14,11 @@ from share import Share
 
 
 class Render:
-    def __init__(self, title: str, source_hash: str, auth_info: str):
+    def __init__(self, title: str, source_hash: str, auth_info: str, language: str):
         self.title = title
         self.hash = source_hash
         self.auth_info = auth_info
+        self.language = language
         self.cams = {}
         self.bell_hidden = 'hidden'
 
@@ -28,20 +30,23 @@ class Render:
         method_name = f'_render_{page}'
 
         if not re.match(r'^[a-z]+$', page) or method_name not in dir(self):
-            raise RuntimeError('Render: invalid page')
+            raise RuntimeError('Render: page not found', 404)
 
         self._prepare_context()  # set self.cams & self.bell_hidden
 
         layout = await _read_file('layout.html')
         template = await _read_file(f'{page}.html')
-        template = await _replace_include(template)
+        template = await _replace_functions(template, self.language)
 
         html = layout.replace('{content}', template)
+
+        # TODO: cache compiled HTML
 
         render = getattr(self, method_name)
         context = render()
 
         context.update({
+            'lang': self.language,
             'bell_hidden': self.bell_hidden,
             'is_system_busy': Share.is_system_busy()
         })
@@ -119,19 +124,28 @@ async def _read_file(file_name: str):
     ).decode()
 
 
-async def _replace_include(html: str):
-    match = re.findall(r'\{include\([^\)]+\)\}', html)
+async def _replace_functions(html: str, language: str) -> str:
+    match = re.findall(r'{([a-z_]+)\((.+?)\)}', html)
     if not match:
-        return html
+        return html  # Nothing to render
 
-    for include in match:
-        file = re.search(r'\([a-z\-]+\.[a-z]+\)', include)
-        if not file:
-            continue
-        block_content = await _read_file(file.group(0)[1:-1])
-        html = html.replace(include, block_content)
+    i18n = gettext.translation('base', '../locale', fallback=True, languages=[language])
+
+    for pair in match:
+        function = pair[0]
+        args = pair[1]
+        if function == 'include':
+            html = await _replace_include(html, args)
+        elif function == '_':
+            html = html.replace('{_(' + args + ')}', i18n.gettext(args))
 
     return html
+
+
+async def _replace_include(html: str, file_name: str) -> str:
+    if not re.search(r'^[a-z\-]+\.[a-z]+$', file_name):
+        raise RuntimeError('Render: invalid included template')
+    return html.replace('{include(' + file_name + ')}', (await _read_file(file_name)))
 
 
 def _get_bell_time(cam_hash) -> str:

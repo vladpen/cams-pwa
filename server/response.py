@@ -36,9 +36,9 @@ class Response:
         await self.writer.drain()
         self.writer.close()
 
-        peer_name = self.request['headers']['x-real-ip']
-        host = self.request['headers']['host_name']
-        Log.write(f'Request {peer_name} > {host} "{request_start_line}" 200')
+        peer = self.request['headers']['x-real-ip']
+        host = self.request['headers']['x-host']
+        Log.write(f'Request {peer} > {host} "{request_start_line}" 200')
 
     @staticmethod
     async def read_file(filename: str) -> bytes:
