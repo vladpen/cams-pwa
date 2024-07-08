@@ -40,7 +40,7 @@ class Videos:
     def get_datetime_by_path(self, path: str) -> str:
         relative_path = path[len(self._cam_path) + 1:]
         no_ext = re.sub(r'\.[^.]+$', '', relative_path)
-        return re.sub(r'[^\d]', '', no_ext)
+        return re.sub(r'\D', '', no_ext)
 
     def get_range_by_path(self, path: str) -> str:
         if self._range > const.MAX_RANGE:

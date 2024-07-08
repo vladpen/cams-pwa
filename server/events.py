@@ -40,8 +40,9 @@ class Events:
         live_path = f'{self._events_path}/{folders[-1]}'
 
         last_event_iso = get_execute(f'ls --full-time {live_path} | tail -1 | awk ' + "'{print $6,$7}'")
-        no_milliseconds = re.sub(r'\.[^.]+$', '', last_event_iso)
-        last_event_digits = re.sub(r'[^\d]', '', no_milliseconds)
+        # example: 2024-05-18 10:49:33.898542994
+        no_milliseconds = re.sub(r'\.[^.]+$', '', last_event_iso)  # remove milliseconds
+        last_event_digits = re.sub(r'\D', '', no_milliseconds)  # remove all non-digit characters
         if not last_event_digits:
             return
         if self._last_event and last_event_digits <= self._last_event:
