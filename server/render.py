@@ -129,7 +129,11 @@ async def _replace_functions(html: str, language: str) -> str:
     if not match:
         return html  # Nothing to render
 
-    i18n = gettext.translation('base', '../locale', fallback=True, languages=[language])
+    i18n = gettext.translation(
+        'base',
+        f'{os_path.dirname(os_path.realpath(__file__))}/../locale',
+        fallback=True,
+        languages=[language])
 
     for pair in match:
         function = pair[0]

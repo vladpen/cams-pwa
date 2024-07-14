@@ -115,7 +115,7 @@ async def _parse_request(raw_request: str, peer_name: str) -> Dict:
 def _get_lang(headers):
     lang = 'en'
     if 'accept-language' in headers:
-        lang = headers['accept-language'].split(',', 1)[0].split('-', 1)[0]
+        lang = headers['accept-language'].split(';', 1)[0].split(',', 1)[0].split('-', 1)[0]
     if not re.search(r'^[a-z]{2,3}$', lang):
         lang = 'en'
     return lang
