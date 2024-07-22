@@ -2,7 +2,7 @@ import re
 import json
 import gettext
 from os import path as os_path
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime
 
 import const
@@ -14,7 +14,7 @@ from share import Share
 
 
 class Render:
-    def __init__(self, title: str, source_hash: str, auth_info: str, language: str):
+    def __init__(self, title: str, source_hash: str, auth_info: Optional[Dict[str, str]], language: str):
         self.title = title
         self.hash = source_hash
         self.auth_info = auth_info
@@ -57,7 +57,9 @@ class Render:
 
     def _prepare_context(self):
         for cam_hash, cam in Config.cameras.items():
-            if self.auth_info != Config.master_cam_hash and self.auth_info != cam_hash:
+            if not self.auth_info:
+                continue
+            if self.auth_info['hash'] != Config.master_cam_hash and self.auth_info['hash'] != cam_hash:
                 continue
             self.cams[cam_hash] = {
                 'name': cam['name'],
@@ -72,7 +74,7 @@ class Render:
         groups = {}
         if hasattr(Config, 'groups'):
             for k, v in Config.groups.items():
-                if self.auth_info == Config.master_cam_hash:
+                if self.auth_info['hash'] == Config.master_cam_hash:
                     groups[k] = {'name': v['name']}
         return {
             'title': self.title,

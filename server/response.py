@@ -1,6 +1,7 @@
 import asyncio
 from http.cookies import SimpleCookie
 from typing import Dict, List
+from urllib.parse import unquote
 
 from auth import Auth
 from log import Log
@@ -38,7 +39,8 @@ class Response:
 
         peer = self.request['headers']['x-real-ip']
         host = self.request['headers']['x-host']
-        Log.write(f'Request {peer} > {host} "{request_start_line}" 200')
+        nick = self.auth.info()['nick'] if self.auth.info() else '_'
+        Log.write(f'Request {peer} ({nick}) > {host} "{unquote(request_start_line)}" 200')
 
     @staticmethod
     async def read_file(filename: str) -> bytes:

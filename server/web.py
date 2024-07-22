@@ -38,7 +38,9 @@ class Web(Response):
         self.hash = self.request['query']['hash'][0]
         if self.hash not in Config.cameras and (not hasattr(Config, 'groups') or self.hash not in Config.groups):
             raise RuntimeError('Web: invalid hash')
-        if not self.auth.info() or (self.auth.info() != Config.master_cam_hash and self.auth.info() != self.hash):
+        if not self.auth.info() or (
+            self.auth.info()['hash'] != Config.master_cam_hash and self.auth.info()['hash'] != self.hash
+        ):
             raise RuntimeError('Web: invalid auth', 403)
 
         # Authorized zone
@@ -62,7 +64,7 @@ class Web(Response):
             raise RuntimeError('Web: invalid post data', 403)
 
         self.headers = [f'Set-Cookie: {self._create_auth_cookie()}']
-        Log.write(f'Web: logged in: {auth_info}')
+        Log.write(f"Web: logged in: {auth_info['nick']} > {auth_info['hash']}")
 
     def _get_title(self) -> str:
         host = self.request['headers']['host']
@@ -164,7 +166,7 @@ class Web(Response):
             await asyncio.sleep(1)
             res = {}
             for cam_hash, date_time in Share.cam_motions.items():
-                if self.auth.info() != Config.master_cam_hash and self.auth.info() != cam_hash:
+                if self.auth.info()['hash'] != Config.master_cam_hash and self.auth.info()['hash'] != cam_hash:
                     continue
                 if last_date_time >= date_time:
                     continue

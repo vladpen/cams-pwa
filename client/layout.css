@@ -13,7 +13,7 @@ form input.error {background: #fc7;}
 .auth-row div {margin-bottom: 0.5em;}
 .auth-row svg, .auth-btn svg {fill: #fff; stroke: #fff; stroke-linecap: round; stroke-linejoin: round;}
 .auth-row svg {width: 1em; height: 1em; vertical-align: middle;}
-.auth-row circle {filter: invert(1);}
+.auth-row.lock circle {filter: invert(1);}
 .auth-row span {vertical-align: middle;}
 .auth-btn {padding: 1em; border: none; background: transparent; cursor: pointer;}
 .auth-btn svg {width: 2em; height: 2em; vertical-align: middle;}
