@@ -20,6 +20,9 @@ class Group extends Base {
             const player = new Player(video, hash, this._cams[hash]);
             player.start();
         }
+        box.onwheel = e => {
+            this.onWheel(box, e);
+        }
         document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;
         document.ontouchmove = this.hideBars;
@@ -37,9 +40,6 @@ class Group extends Base {
         this.footer.onmouseup = this.fadeBars;
         this.footer.ontouchend = this.fadeBars;
 
-        window.onresize = this._onResize;
-        this._onResize();
-
         this.btnPlay.classList.add('hidden');
         this.btnPlay.onclick = () => {
             for (const video of document.querySelectorAll('video')) {
@@ -47,6 +47,9 @@ class Group extends Base {
             }
             this.btnPlay.classList.add('hidden');
         }
+        window.onresize = this._onResize;
+        this._onResize();
+
         const urlParams = new URLSearchParams(window.location.search);
         sessionStorage.setItem('group_hash', urlParams.get('hash'));
         Bell.wakeLock();

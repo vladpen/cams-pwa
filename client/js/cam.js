@@ -22,6 +22,10 @@ class Cam extends Base {
 
         this._player.start();
 
+        const box = this._video.parentElement;
+        box.onwheel = e => {
+            this.onWheel(box, e);
+        }
         this.btnPlay.onclick = this._togglePlay;
         this.btnPause.onclick = this._togglePlay;
 
@@ -124,17 +128,17 @@ class Cam extends Base {
 
     _onResize = () => {
         this.hideBars();
-        if (window.innerWidth / window.innerHeight < this.ASPECT_RATIO) {
-            this._video.parentElement.classList.add('fit-width');  // top & bottom margins, width = 100%
-            this._video.parentElement.classList.remove('fit-height');
-        } else {
+        if (window.innerWidth / window.innerHeight > this.ASPECT_RATIO) {
             this._video.parentElement.classList.add('fit-height');  // left & right margins, height = 100%
             this._video.parentElement.classList.remove('fit-width');
+        } else {
+            this._video.parentElement.classList.add('fit-width');  // top & bottom margins, width = 100%
+            this._video.parentElement.classList.remove('fit-height');
         }
         this.resizeBars();
     }
 
-    _seek = (e) => {
+    _seek = e => {
         if (e.target.closest('.disabled')) {
             return;
         }

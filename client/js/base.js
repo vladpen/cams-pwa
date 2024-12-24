@@ -85,4 +85,37 @@ class Base {
         this.header.querySelector('.link-btn').classList.add('blink');
         document.location.replace(href);
     }
+
+    onWheel = (box, e) => {
+        e.preventDefault();
+        let step = 1.1;
+        let dir = 1;
+        if (e.wheelDelta < 0) {
+            step = 0.9;
+            dir = -1;
+        }
+        const rect = box.getBoundingClientRect();
+        const aspectRatio = rect.width / rect.height;
+        if (window.innerWidth / window.innerHeight > aspectRatio) {
+            if (e.wheelDelta > 0 && box.scrollHeight >= window.innerHeight * 10)
+                return;
+            if (e.wheelDelta < 0 && box.scrollHeight * step <= window.innerHeight) {
+                box.style.height = '100vh';
+                return;
+            }
+            box.style.height = Math.round(box.scrollHeight * step) + 'px';
+        } else {
+            if (e.wheelDelta > 0 && box.scrollWidth >= window.innerWidth * 10)
+                return;
+            if (e.wheelDelta < 0 && box.scrollWidth * step <= window.innerWidth) {
+                box.style.width = '100vw';
+                return;
+            }
+            box.style.width = Math.round(box.scrollWidth * step) + 'px';
+        }
+        window.scroll(
+            window.scrollX + (e.clientX - rect.left) / 10 * dir,
+            window.scrollY + (e.clientY - rect.top) / 10 * dir
+        );
+    }
 }
