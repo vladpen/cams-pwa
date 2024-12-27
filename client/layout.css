@@ -9,7 +9,7 @@ form input {width: 95%;}
 form input, form button {font-size: 1em;}
 form input.error {background: #fc7;}
 .auth svg {margin-right: 0.3em;}
-.auth-row {margin-bottom: 1em;}
+.auth-row {max-width: 20em; margin: 0 auto 1em auto;}
 .auth-row div {margin-bottom: 0.5em;}
 .auth-row svg, .auth-btn svg {fill: #fff; stroke: #fff; stroke-linecap: round; stroke-linejoin: round;}
 .auth-row svg {width: 1em; height: 1em; vertical-align: middle;}
