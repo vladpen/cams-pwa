@@ -91,7 +91,7 @@ class Storage:
             self._start_time = None
             self._main_process.kill()
             execute(f"kill -9 `pgrep -f '{self._main_cmd}'`")  # also kill all possible zombies
-            daily_dir = f'{self._cam_path}/{datetime.now().strftime(const.DT_ROOT_FORMAT)}'
+            daily_dir = datetime.now().strftime(const.DT_ROOT_FORMAT)
             self._delete_unfinished(daily_dir)
         except Exception as e:
             Log.write(f'Storage: watchdog: kill {self._main_process.pid} ERROR "{self._hash}" ({repr(e)})')
