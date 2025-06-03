@@ -233,4 +233,4 @@ MediaSource.isTypeSupported('video/mp4; codecs="avc1.42001а, mp4a.40.2"')
 
 Подробное описание приложения: [habr.com/ru/post/715016](https://habr.com/ru/post/715016/)
 
-*Copyright (c) 2023-2024 vladpen under MIT license. Use it with absolutely no warranty.*
+*Copyright (c) 2023-2025 vladpen under MIT license. Use it with absolutely no warranty.*
