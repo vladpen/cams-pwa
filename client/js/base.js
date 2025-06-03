@@ -28,7 +28,7 @@ class Base {
         this.header.style.left = vp.pageLeft + 'px';
         this.header.style.top = vp.pageTop + 'px';
         this.footer.style.left = vp.pageLeft + 'px';
-        this.footer.style.top = vp.pageTop + vp.height - (this.footer.offsetHeight) / scale + 'px';
+        this.footer.style.top = vp.pageTop + vp.height - this.footer.offsetHeight / scale + 'px';
 
         if (this.speedRange) {
             this.speedRange.classList.add('hidden');
