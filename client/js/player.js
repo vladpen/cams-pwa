@@ -69,6 +69,7 @@ class Player extends Base {
         this._fetch(this._liveUrl, {}, () => {
             this._video.play().catch(e => {
                 console.error(e.message);
+                this.resizeBars();
                 this.showPlayBtn();
             });
         });
