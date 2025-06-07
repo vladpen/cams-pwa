@@ -14,22 +14,23 @@ class Base {
     motionRange = this.footer.querySelector('.motion-range');
     timeRange = this.footer.querySelector('.time-range');
     loader = document.querySelector('.loader');
+    _fadeTimeoutId = null;
 
     resizeBars = () => {
         this.showBars();
 
         const vp = window.visualViewport;
-        let scale = 1;
         if ('userAgentData' in navigator && navigator.userAgentData.mobile) {
-            scale = window.outerWidth / vp.width;
-            this.header.style.transform = 'scale(' + 1 / scale + ')';
-            this.footer.style.transform = 'scale(' + 1 / scale + ')';
-        }
-        this.header.style.left = vp.pageLeft + 'px';
-        this.header.style.top = vp.pageTop + 'px';
-        this.footer.style.left = vp.pageLeft + 'px';
-        this.footer.style.top = vp.pageTop + vp.height - this.footer.offsetHeight / scale + 'px';
+            this.header.style.transform = 'scale(' + 1 / vp.scale + ')';
+            this.footer.style.transform = 'scale(' + 1 / vp.scale + ')';
 
+            this.header.style.left = vp.pageLeft + 'px';
+            this.header.style.top = vp.pageTop + 'px';
+            this.footer.style.left = vp.pageLeft + 'px';
+            this.footer.style.bottom = 'initial';
+            this.footer.style.top = vp.pageTop + vp.height - this.footer.offsetHeight / vp.scale + 'px';
+            // this.footer.style.bottom = ((1 - 1 / vp.scale) * window.outerHeight / 1.12 - vp.pageTop) + 'px';
+        }
         if (this.speedRange) {
             this.speedRange.classList.add('hidden');
         }
@@ -40,21 +41,26 @@ class Base {
     }
 
     hideBars = () => {
+        clearTimeout(this._fadeTimeoutId);
         for (const bar of document.querySelectorAll('.bar')) {
             bar.classList.add('hidden');
         }
     }
 
     showBars = () => {
+        clearTimeout(this._fadeTimeoutId);
         for (const bar of document.querySelectorAll('.bar')) {
             bar.classList.remove('hidden', 'invisible');
         }
     }
 
     fadeBars = () => {
-        for (const bar of document.querySelectorAll('.bar')) {
-            bar.classList.add('invisible');
-        }
+        clearTimeout(this._fadeTimeoutId);
+        this._fadeTimeoutId = setTimeout(() => {
+            for (const bar of document.querySelectorAll('.bar')) {
+                bar.classList.add('invisible');
+            }
+        }, 5000);
     }
 
     showPlayBtn = () => {
