@@ -54,7 +54,7 @@ python3 server/main.py
 ```bash
 [Unit]
 Description=CAMS video monitoring
-After=network-online.target
+After=network.target
 
 [Service]
 ExecStart=/usr/bin/python3 /<path-to-cams-pwa>/server/main.py
@@ -62,7 +62,7 @@ User=<www_user>
 Group=<www_group>
 
 [Install]
-WantedBy=network-online.target
+WantedBy=multi-user.target
 ```
 
 *Примечание: в этом примере служба запускается после того, как сетевому интерфейсу будет назначен IP адрес.
