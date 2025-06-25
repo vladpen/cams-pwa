@@ -15,7 +15,6 @@ class Storage:
         self._cam_path = f"{Config.storage_path}/{Config.cameras[self._hash]['folder']}"
         self._start_time = None
         self._main_process = None
-        self._main_cmd = ''
         self._last_rotation_date = ''
         self._videos = Videos(self._hash)
 
@@ -37,13 +36,10 @@ class Storage:
         else:
             cmd = Config.storage_command
 
-        pos = cmd.find('{url}') + len(cfg['url'])
-        cmd = cmd.replace('{url}', cfg['url']).replace('{cam_path}', f'{self._cam_path}')
+        cmd = cmd.replace('{url}', f'"{cfg['url']}"').replace('{cam_path}', f'{self._cam_path}')
 
         self._main_process = execute_async(cmd)
         self._start_time = datetime.now()
-
-        self._main_cmd = cmd[:pos]
 
         Log.write(f'* Storage: {caller}: start main process {self._main_process.pid} for {self._hash}')
 
@@ -90,7 +86,6 @@ class Storage:
         try:
             self._start_time = None
             self._main_process.kill()
-            execute(f"kill -9 `pgrep -f '{self._main_cmd}'`")  # also kill all possible zombies
             daily_dir = datetime.now().strftime(const.DT_ROOT_FORMAT)
             self._delete_unfinished(daily_dir)
         except Exception as e:
