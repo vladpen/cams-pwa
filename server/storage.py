@@ -1,12 +1,16 @@
 import time
+import re
 from datetime import datetime, timedelta
 
 import const
-from execute import execute_async, execute, get_execute
+from execute import execute_async, execute, get_execute, get_returncode
 from _config import Config
 from videos import Videos
 from share import Share
 from log import Log
+
+FREEZE_INTERVAL = 30.0
+KILL_TIMEOUT = 5
 
 
 class Storage:
@@ -36,12 +40,23 @@ class Storage:
         else:
             cmd = Config.storage_command
 
+        cam_ip = re.findall(r'\d+(?:\.\d+){3}', cfg['url'])
+        if not cam_ip:
+            Log.write(f"Storage: ERROR: can't parse cam IP from URL for {self._hash}")
+            return
+
+        self._start_time = datetime.now()
+
+        ping = get_returncode(f'ping -c 1 -W 1 {cam_ip[0]}')
+        if ping != 0:
+            Log.write(f'Storage: OFFLINE: {self._hash} ({cam_ip[0]})')
+            return
+
         cmd = cmd.replace('{url}', f'"{cfg['url']}"').replace('{cam_path}', f'{self._cam_path}')
 
         self._main_process = execute_async(cmd)
-        self._start_time = datetime.now()
 
-        Log.write(f'* Storage: {caller}: start main process {self._main_process.pid} for {self._hash}')
+        Log.write(f'* Storage: {caller}: start saving process {self._main_process.pid} {self._hash}')
 
     def _mkdir(self, folder: str) -> None:
         """ Create storage folder if not exists
@@ -51,13 +66,13 @@ class Storage:
     def watchdog(self) -> None:
         """ Infinite loop for checking camera(s) availability
         """
-        Log.write(f'* Storage: start watchdog for {self._hash}')
+        Log.write(f'* Storage: watchdog: start {self._hash}')
         while True:
             time.sleep(Config.min_segment_duration)
             try:
                 self._watchdog()
             except Exception as e:
-                Log.write(f"Storage: watchdog ERROR: can't check the storage {self._hash} ({repr(e)})")
+                Log.write(f'Storage: watchdog: ERROR: {self._hash} ({repr(e)})')
 
     def _watchdog(self) -> None:
         """ Extremely important piece.
@@ -77,19 +92,24 @@ class Storage:
             ls = ls[-10:]
         if ls:
             self._live_motion_detector(ls[:-1])
-        if ls or not self._start_time or (datetime.now() - self._start_time).total_seconds() < 60.0:
+        if ls or not self._start_time or (datetime.now() - self._start_time).total_seconds() < FREEZE_INTERVAL:
             return  # normal case
 
-        Log.write(f'Storage: FREEZE detected for "{self._hash}"')
+        Log.write(f'Storage: FREEZE: {self._hash}')
 
         # Freeze detected, restart
-        try:
-            self._start_time = None
-            self._main_process.kill()
-            daily_dir = datetime.now().strftime(const.DT_ROOT_FORMAT)
-            self._delete_unfinished(daily_dir)
-        except Exception as e:
-            Log.write(f'Storage: watchdog: kill {self._main_process.pid} ERROR "{self._hash}" ({repr(e)})')
+        self._start_time = None
+
+        if self._main_process:
+            try:
+                self._main_process.kill()
+                daily_dir = datetime.now().strftime(const.DT_ROOT_FORMAT)
+                self._delete_unfinished(daily_dir)
+                # Wait for the process die to avoid "zombie"
+                # Perhaps the timeout should be greater than DefaultTimeoutStopSec in /etc/systemd/system.conf
+                time.sleep(KILL_TIMEOUT)
+            except Exception as e:
+                Log.write(f"Storage: watchdog: ERROR: can't kill {self._main_process.pid} {self._hash} ({repr(e)})")
 
         self._start_saving('watchdog')
 
@@ -124,7 +144,8 @@ class Storage:
             if self._hash in Share.cam_motions and Share.cam_motions[self._hash] >= date_time:
                 return
             Share.cam_motions[self._hash] = date_time
-            Log.write(f'Storage: motion detected: {date_time[:8]} {date_time[8:]} {self._hash}')
+            mtime = f'{date_time[8:10]}:{date_time[10:12]}:{date_time[12:14]}'
+            Log.write(f'Storage: motion detected: {mtime} {self._hash}')
 
     def _remove_folder_if_empty(self, folder) -> bool:
         path = f'{self._cam_path}/{folder}'

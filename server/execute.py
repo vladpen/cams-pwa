@@ -1,4 +1,4 @@
-from subprocess import run as sp_run, Popen
+from subprocess import run as sp_run, Popen, PIPE
 
 
 def execute_async(cmd: str) -> Popen:
@@ -20,3 +20,9 @@ def get_execute(cmd: str) -> str:
     if not res:
         return ''
     return res.decode().strip()
+
+
+def get_returncode(cmd: str) -> int:
+    """ Execute "cmd" and return "returncode"
+    """
+    return sp_run(cmd, shell=True, stdout=PIPE).returncode
