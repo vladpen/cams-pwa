@@ -54,7 +54,7 @@ class Events:
             return
 
         self._last_event = last_event_digits
-        Log.write(f'Events: motion detected: {no_milliseconds} {self._hash}')
+        Log.write(f'Events: motion detected: {no_milliseconds[11:]} {self._hash}')
 
     def _rotate(self) -> None:
         now_date = datetime.now().strftime(const.DT_ROOT_FORMAT)
@@ -93,12 +93,16 @@ class Events:
         if not ls:
             return
 
+        cnt = len(ls)
         for row in ls:
             wd = row.split('/')[-1]
-            if wd >= oldest_folder or not wd:
+            if not wd or wd >= oldest_folder or cnt <= Config.events_period_days:
                 break
             execute_async(f'rm -rf {self._events_path}/{wd}')
+            cnt -= 1
             Log.write(f'Events cleanup: remove {self._hash} {wd}')
+
+        Log.write(f'Events: cleanup done {self._hash}')
 
     def _get_root_folders(self) -> List[str]:
         if self._root_folders:

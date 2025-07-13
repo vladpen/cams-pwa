@@ -171,15 +171,17 @@ class Storage:
 
         oldest_folder = (datetime.now() - timedelta(days=Config.storage_period_days)).strftime(const.DT_ROOT_FORMAT)
 
+        cnt = len(ls)
         for row in ls[:-1]:
             wd = row.split('/')[-1]
             if not wd:
                 break
-            if wd < oldest_folder:
+            if wd < oldest_folder and cnt > Config.storage_period_days:
                 execute_async(f'rm -rf {self._cam_path}/{wd}')
-                Log.write(f'Storage: remove {self._hash} {wd}')
-                continue
-            self._delete_unfinished(wd)
+                cnt -= 1
+                Log.write(f'Storage cleanup: remove {self._hash} {wd}')
+            else:
+                self._delete_unfinished(wd)
 
         Log.write(f'Storage: cleanup done {self._hash}')
 
