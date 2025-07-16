@@ -21,19 +21,19 @@ class Images:
         return cnt
 
     def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int, str, int]:
+        position = args['pos'][0].split('.') if 'pos' in args and '.' in args['pos'][0] else [-1, -1]
+
         if args['image'][0] == 'next':
             step = int(args['step'][0]) if 'step' in args else 0
-            position = args['pos'][0].split('.') if 'pos' in args else [-1, -1]
             return self._get_next(step, position)
 
         elif args['image'][0] == 'range':
             rng = int(args['range'][0]) if 'range' in args else const.MAX_RANGE
-            position = args['pos'][0].split('.') if 'pos' in args else [-1, -1]
             return self._get_by_range(rng, position)
 
         return self._get_last()  # never happen
 
-    def _get_next(self, step: int, position: List[int]) -> Tuple[str, int, str, int]:
+    def _get_next(self, step: int, position: List[Any]) -> Tuple[str, int, str, int]:
         if step == 0:
             return self._get_last()
 
