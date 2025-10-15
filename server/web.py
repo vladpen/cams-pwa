@@ -10,7 +10,7 @@ from render import Render
 from videos import Videos
 from images import Images
 from share import Share
-from log import Log
+from log import log
 
 
 class Web(Response):
@@ -64,7 +64,7 @@ class Web(Response):
             raise RuntimeError('Web: invalid post data', 403)
 
         self.headers = [f'Set-Cookie: {self._create_auth_cookie()}']
-        Log.write(f"Web: logged in: {auth_info['nick']} > {auth_info['hash']}")
+        log(f"Web: logged in: {auth_info['nick']} > {auth_info['hash']}")
 
     def _get_title(self) -> str:
         host = self.request['headers']['host']
@@ -158,7 +158,7 @@ class Web(Response):
             last_date_time = self.request['query']['dt'][0]
         except Exception as e:
             last_date_time = ''
-            Log.write(f'Web ERROR: invalid bell datetime ({repr(e)})')
+            log(f'Web: invalid bell datetime ({repr(e)})', True)
 
         prev_motions = Share.cam_motions.copy()
         cnt = 1

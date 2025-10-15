@@ -7,7 +7,7 @@ import const
 from _config import Config
 from execute import execute_async, execute, get_execute
 from share import Share
-from log import Log
+from log import log
 
 
 class Events:
@@ -24,14 +24,14 @@ class Events:
     def check(self) -> None:
         """ Check camera events (motion detector) and rotate folders
         """
-        Log.write(f'* Events: start handling {self._hash}')
+        log(f'* Events: start handling {self._hash}')
         while True:
             time.sleep(self.CHECK_INTERVAL_SEC)
             try:
                 self._rotate()
                 self._check()
             except Exception as e:
-                Log.write(f"Events ERROR: can't handle {self._hash} ({repr(e)})")
+                log(f"Events: can't handle {self._hash} ({repr(e)})", True)
 
     def _check(self) -> None:
         folders = self._get_root_folders()
@@ -54,7 +54,7 @@ class Events:
             return
 
         self._last_event = last_event_digits
-        Log.write(f'Events: motion detected: {no_milliseconds[11:]} {self._hash}')
+        log(f'Events: motion detected: {no_milliseconds[11:]} {self._hash}')
 
     def _rotate(self) -> None:
         now_date = datetime.now().strftime(const.DT_ROOT_FORMAT)
@@ -84,7 +84,7 @@ class Events:
             f'mkdir -p {self._events_path}/{yesterday_folder} '
             f'&& mv {live_path}/* {self._events_path}/{yesterday_folder}')
 
-        Log.write(f'Events: rotation at {now_date} {self._hash}')
+        log(f'Events: rotation at {now_date} {self._hash}')
 
     def _cleanup(self) -> None:
         oldest_folder = (datetime.now() - timedelta(days=Config.events_period_days)).strftime(const.DT_ROOT_FORMAT)
@@ -100,9 +100,9 @@ class Events:
                 break
             execute_async(f'rm -rf {self._events_path}/{wd}')
             cnt -= 1
-            Log.write(f'Events cleanup: remove {self._hash} {wd}')
+            log(f'Events cleanup: remove {self._hash} {wd}')
 
-        Log.write(f'Events: cleanup done {self._hash}')
+        log(f'Events: cleanup done {self._hash}')
 
     def _get_root_folders(self) -> List[str]:
         if self._root_folders:

@@ -4,7 +4,7 @@ import re
 from urllib.parse import quote_plus, unquote_plus
 from typing import Dict, Optional
 from _config import Config
-from log import Log
+from log import log
 
 
 class Auth:
@@ -46,7 +46,7 @@ class Auth:
         p = subprocess.run(cmd, shell=True, capture_output=True)
         res = p.stdout.decode()
         if not res:
-            Log.write('Auth encryption ERROR: the OPENSSL may not be installed')
+            log('Auth encryption: the OPENSSL may not be installed', True)
         return quote_plus(res)
 
     @staticmethod

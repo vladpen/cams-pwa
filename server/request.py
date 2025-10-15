@@ -6,7 +6,7 @@ from typing import Dict
 
 from _config import Config
 from web import Web
-from log import Log
+from log import log
 
 
 def listen_http() -> None:
@@ -18,7 +18,7 @@ def listen_http() -> None:
         scheme = 'http'
         ctx = None
 
-    Log.write(f'* Serving on {scheme}://{Config.web_server_host}:{Config.web_server_port}')
+    log(f'* Serving on {scheme}://{Config.web_server_host}:{Config.web_server_port}')
     asyncio.run(_main(ctx))
 
 
@@ -53,7 +53,7 @@ async def _handle(reader: asyncio.streams.StreamReader, writer: asyncio.streams.
         try:
             await Web.send_error(writer, code, msg, error)
         except Exception as ex:
-            Log.write(f'Request {msg} cancelled ({repr(ex)})')
+            log(f'Request {msg} cancelled ({repr(ex)})', True)
 
 
 async def _get_request(reader: asyncio.streams.StreamReader) -> str:
@@ -61,7 +61,7 @@ async def _get_request(reader: asyncio.streams.StreamReader) -> str:
     try:
         request = (await reader.read(1000000000)).decode().strip()
     except Exception as e:
-        Log.write(f'Request ERROR: {repr(e)}')
+        log(f'Request: {repr(e)}', True)
     return request
 
 

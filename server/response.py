@@ -4,7 +4,7 @@ from typing import Dict, List
 from urllib.parse import unquote
 
 from auth import Auth
-from log import Log
+from log import log
 
 
 class Response:
@@ -28,7 +28,7 @@ class Response:
         writer.write(('\r\n'.join(headers)).encode('UTF-8'))
         await writer.drain()
         writer.close()
-        Log.write(f'Request {msg} {code} ERROR ({error})')
+        log(f'Request {msg} {code}: {error}', True)
 
     async def send(self, headers: List, content: bytes, request_start_line: str) -> None:
         headers = ['HTTP/1.1 200 OK'] + headers + ['', '']
@@ -40,7 +40,7 @@ class Response:
         peer = self.request['headers']['x-real-ip']
         host = self.request['headers']['x-host']
         nick = self.auth.info()['nick'] if self.auth.info() else '_'
-        Log.write(f'Request {peer} ({nick}) > {host} "{unquote(request_start_line)}" 200')
+        log(f'Request {peer} ({nick}) > {host} "{unquote(request_start_line)}" 200')
 
     @staticmethod
     async def read_file(filename: str) -> bytes:

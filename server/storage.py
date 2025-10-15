@@ -7,7 +7,7 @@ from execute import execute_async, execute, get_execute, get_returncode
 from _config import Config
 from videos import Videos
 from share import Share
-from log import Log
+from log import log
 
 FREEZE_INTERVAL = 30.0
 KILL_TIMEOUT = 5
@@ -27,7 +27,7 @@ class Storage:
         try:
             self._start_saving('run')
         except Exception as e:
-            Log.write(f"Storage: ERROR: can't start saving {self._hash} ({repr(e)})")
+            log(f"Storage: can't start saving {self._hash} ({repr(e)})", True)
 
     def _start_saving(self, caller: str) -> None:
         """ We'll use system (linux) commands for this job
@@ -42,21 +42,21 @@ class Storage:
 
         cam_ip = re.findall(r'\d+(?:\.\d+){3}', cfg['url'])
         if not cam_ip:
-            Log.write(f"Storage: ERROR: can't parse cam IP from URL for {self._hash}")
+            log(f"Storage: can't parse cam IP from URL for {self._hash}", True)
             return
 
         self._start_time = datetime.now()
 
         ping = get_returncode(f'ping -c 1 -W 1 {cam_ip[0]}')
         if ping != 0:
-            Log.write(f'Storage: OFFLINE: {self._hash} ({cam_ip[0]})')
+            log(f'Storage: OFFLINE: {self._hash} ({cam_ip[0]})')
             return
 
         cmd = cmd.replace('{url}', f'"{cfg['url']}"').replace('{cam_path}', f'{self._cam_path}')
 
         self._main_process = execute_async(cmd)
 
-        Log.write(f'* Storage: {caller}: start saving process {self._main_process.pid} {self._hash}')
+        log(f'* Storage: {caller}: start saving process {self._main_process.pid} {self._hash}')
 
     def _mkdir(self, folder: str) -> None:
         """ Create storage folder if not exists
@@ -66,13 +66,13 @@ class Storage:
     def watchdog(self) -> None:
         """ Infinite loop for checking camera(s) availability
         """
-        Log.write(f'* Storage: watchdog: start {self._hash}')
+        log(f'* Storage: watchdog: start {self._hash}')
         while True:
             time.sleep(Config.min_segment_duration)
             try:
                 self._watchdog()
             except Exception as e:
-                Log.write(f'Storage: watchdog: ERROR: {self._hash} ({repr(e)})')
+                log(f'Storage: watchdog: {self._hash} ({repr(e)})', True)
 
     def _watchdog(self) -> None:
         """ Extremely important piece.
@@ -95,7 +95,7 @@ class Storage:
         if ls or not self._start_time or (datetime.now() - self._start_time).total_seconds() < FREEZE_INTERVAL:
             return  # normal case
 
-        Log.write(f'Storage: FREEZE: {self._hash}')
+        log(f'Storage: FREEZE: {self._hash}')
 
         # Freeze detected, restart
         self._start_time = None
@@ -109,7 +109,7 @@ class Storage:
                 # Perhaps the timeout should be greater than DefaultTimeoutStopSec in /etc/systemd/system.conf
                 time.sleep(KILL_TIMEOUT)
             except Exception as e:
-                Log.write(f"Storage: watchdog: ERROR: can't kill {self._main_process.pid} {self._hash} ({repr(e)})")
+                log(f"Storage: watchdog: can't kill {self._main_process.pid} {self._hash} ({repr(e)})", True)
 
         self._start_saving('watchdog')
 
@@ -145,7 +145,7 @@ class Storage:
                 return
             Share.cam_motions[self._hash] = date_time
             mtime = f'{date_time[8:10]}:{date_time[10:12]}:{date_time[12:14]}'
-            Log.write(f'Storage: motion detected: {mtime} {self._hash}')
+            log(f'Storage: motion detected: {mtime} {self._hash}')
 
     def _remove_folder_if_empty(self, folder) -> bool:
         path = f'{self._cam_path}/{folder}'
@@ -179,11 +179,11 @@ class Storage:
             if wd < oldest_folder and cnt > Config.storage_period_days:
                 execute_async(f'rm -rf {self._cam_path}/{wd}')
                 cnt -= 1
-                Log.write(f'Storage cleanup: remove {self._hash} {wd}')
+                log(f'Storage cleanup: remove {self._hash} {wd}')
             else:
                 self._delete_unfinished(wd)
 
-        Log.write(f'Storage: cleanup done {self._hash}')
+        log(f'Storage: cleanup done {self._hash}')
 
     def _delete_unfinished(self, wd) -> None:
         # Remove unfinished (low sized) files & empty folders

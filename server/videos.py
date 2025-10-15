@@ -6,7 +6,7 @@ from typing import Tuple, List, Dict, Any, Optional
 import const
 from _config import Config
 from execute import get_execute
-from log import Log
+from log import log
 
 
 class Videos:
@@ -170,7 +170,7 @@ class Videos:
             parts.append(folders[-1]) if step < 0 else parts.append(folders[0])
             return await self._find_nearest_file('/'.join(parts), '', step)  # shift right
 
-        Log.write(f'find_nearest_file: not found: {parent}[/{folder}], step={step}')
+        log(f'find_nearest_file: not found: {parent}[/{folder}], step={step}')
 
         return '', 0
 

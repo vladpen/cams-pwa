@@ -1,19 +1,12 @@
-import time
-from subprocess import Popen
+"""
+Log to system journal.
+Usage examples (for "cams-pwa" unit):
+    Show log from today:
+        journalctl -u cams-pwa --since today
+    Live log monitoring:
+        journalctl -u cams-pwa -f
+"""
 
-from _config import Config
-
-
-class Log:
-    @staticmethod
-    def write(info) -> None:
-        now = time.strftime("%Y-%m-%d %H:%M:%S")
-        if Config.debug:
-            print(f'* {now} {info.strip()}')
-            return
-
-        # No strict necessary to use system command here, but it's the easiest way
-        info = info.replace('"', '\\"')
-        text = f'{now} {info}'
-        cmd = f'echo "{text}" >> {Config.log_file}'
-        Popen(cmd, shell=True)
+def log(message, is_error=False) -> None:
+    prefix = '' if not is_error else '~ ERROR: '
+    print(f'{prefix}{message.strip()}', flush=True)

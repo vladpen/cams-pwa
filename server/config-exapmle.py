@@ -59,12 +59,6 @@ class Config:
     # Used as the storage watchdog interval and motion detector one
     min_segment_duration = 4
 
-    # Create the cams-pwa folder in /var/log directory,
-    # assign access rights (chown/chmod) to user "www_user" (see "Unit" section in README.md)
-    # and check logrotate rules,
-    # or just run main.py script with root permissions
-    log_file = '/var/log/cams-pwa/cams-pwa.log'
-
     # Storage video files root folder
     # Attention!
     # All files and subdirectories older than "storage_period_days" in this folder will be deleted!
@@ -93,7 +87,6 @@ class Config:
     is_system_busy_command = ''
 
     # Debug options
-    debug = False
     storage_enabled = True
     events_enabled = True
     web_enabled = True
