@@ -22,7 +22,7 @@ class Render:
         self.cams = {}
         self.bell_hidden = 'hidden'
 
-    async def get_html(self, page: str) -> str:
+    async def get_html(self, page: str, uri: str) -> str:
         """ Factory method to read and render a given template (page) in the global layout (/client/layout.html).
             The template should be named "{page}.html" and the rendering method should be named "_render_{page}".
             Returns the finished HTML layout.
@@ -38,7 +38,7 @@ class Render:
         template = await _read_file(f'{page}.html')
         template = await _replace_functions(template, self.language)
 
-        html = layout.replace('{content}', template)
+        html = layout.replace('{content}', template).replace('{uri}', uri)
 
         # TODO: cache compiled HTML
 

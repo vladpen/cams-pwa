@@ -23,11 +23,14 @@ class Web(Response):
     async def do_get(self) -> None:
         """ Router. Possible GET params: ?<page|video|image|bell>=<val>[...]&hash=<hash>[...]
         """
+        if 'webmanifest' in self.request['uri']:  # check first
+            return await self._send_webmanifest()
+
+        if not self.request['query'] and self.request['uri'] == '/':  # home page
+            return await self._send_page()
+
         if not self.request['query'] and self.request['uri'] != '/':
             return await self._send_static()
-
-        if not self.request['query'] and self.request['uri'] == '/':
-            return await self._send_page()  # home page
 
         if 'bell' in self.request['query']:
             return await self._send_bell()
@@ -89,9 +92,20 @@ class Web(Response):
 
     async def _send_static(self) -> None:
         static_file = self.request['uri']
-        if not re.search(r'^/([a-z]+/)*[a-z\d._]+$', static_file):
+        if not re.search(r'^/([a-z]+/)*[a-z\d._\-\?]+$', self.request['uri']):
             raise RuntimeError('Web: invalid static URI', 404)
 
+        await self._set_static(static_file)
+
+    async def _send_webmanifest(self) -> None:
+        static_file = '/cams.webmanifest'
+        await self._set_static(static_file)
+
+        self.body = self.body.replace(
+            b'{title}', self._get_title().encode('UTF-8')).replace(
+            b'{uri}', self.request['uri'].replace(static_file, '').encode('UTF-8'))
+
+    async def _set_static(self, static_file: str) -> None:
         try:
             mime_type, _enc = mimetypes.MimeTypes().guess_type(static_file)
             self.headers = [
@@ -100,11 +114,8 @@ class Web(Response):
             ]
             self.body = await Response.read_file(
                 f'{os_path.dirname(os_path.realpath(__file__))}/../client{static_file}')
-            if static_file == '/cams.webmanifest':
-                self.body = self.body.replace(b'{title}', self._get_title().encode('UTF-8'))
-
         except Exception:
-            raise RuntimeError('Web: static file not found', 404)
+            raise RuntimeError('Web: invalid static file', 404)
 
     async def _send_page(self) -> None:
         page = self.request['query']['page'][0] if self.request['query'] else 'home'
@@ -116,7 +127,7 @@ class Web(Response):
             self.headers.append(f'Set-Cookie: {self._create_auth_cookie()}')
 
         render = Render(self._get_title(), self.hash, self.auth.info(), self.request['headers']['x-language'])
-        self.body = (await render.get_html(page)).encode('UTF-8')
+        self.body = (await render.get_html(page, self.request['uri'])).encode('UTF-8')
 
     async def _send_segment(self) -> None:
         videos = Videos(self.hash)

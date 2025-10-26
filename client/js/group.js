@@ -6,12 +6,16 @@ class Group extends Base {
 
     run = () => {
         const box = document.querySelector('.group-box');
-        for (let hash in this._cams) {
-            const frame = document.createElement('div');
-            frame.classList.add('video-box', 'link');
-            const video = document.createElement('video');
-            frame.append(video);
-            box.append(frame);
+        const frame_template = box.querySelector('.video-box');
+        const hashes = Object.keys(this._cams);
+
+        for (let i = 1; i < hashes.length; i++) {
+            box.appendChild(frame_template.cloneNode(true));
+        }
+        const frames = box.querySelectorAll('.video-box');
+        frames.forEach((frame, i) => {
+            const video = frame.querySelector('video');
+            const hash = hashes[i];
 
             frame.onclick = () => {
                 frame.classList.add('blink');
@@ -19,7 +23,7 @@ class Group extends Base {
             }
             const player = new Player(video, hash, this._cams[hash]);
             player.start();
-        }
+        });
         box.onwheel = e => {
             this.onWheel(box, e);
         }

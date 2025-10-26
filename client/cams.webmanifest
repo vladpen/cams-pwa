@@ -1,17 +1,13 @@
 {
-    "start_url": "/",
-    "scope" : "/",
+    "start_url": "{uri}",
     "name": "{title}",
-    "short_name": "{title}",
-    "description": "{title}",
-    "background_color": "#000",
-    "theme_color": "#000",
-    "orientation": "any",
-    "display": "standalone",
     "icons": [
         {
-            "src": "img/icon.svg",
+            "src": "/img/icon.svg",
             "sizes": "any"
         }
-    ]
+    ],
+    "background_color": "#000",
+    "theme_color": "#000",
+    "display": "standalone"
 }
