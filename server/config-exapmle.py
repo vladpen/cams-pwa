@@ -30,12 +30,6 @@ class Config:
         }
     }
 
-    # Home page title
-    title = 'Cams'
-    # PWA title.
-    # Useful for multiple app instances accessed over a local network and the web
-    web_title = 'Cams'
-
     web_server_host = '0.0.0.0'
     web_server_port = 8000
 

@@ -69,21 +69,21 @@ class Web(Response):
         self.headers = [f'Set-Cookie: {self._create_auth_cookie()}']
         log(f"Web: logged in: {auth_info['nick']} > {auth_info['hash']}")
 
-    def _get_title(self) -> str:
+    def _get_network_type(self) -> str:
         host = self.request['headers']['host']
         client_ip = self.request['headers']['x-real-ip']
         gateway_ip = Share.get_default_gateway_ip()
 
         if client_ip == gateway_ip:  # cloud connection via router, e.g. KeenDNS
-            return Config.web_title
+            return 'inet'
 
         local_network_id = '192.168.'
         if gateway_ip:
             local_network_id = re.sub(r'([.:])\d+$', r'\1', gateway_ip)  # i.g. "192.168.0."
 
         if client_ip.startswith(local_network_id) or host.startswith('127.0.') or host.startswith('localhost'):
-            return Config.title
-        return Config.web_title
+            return 'local'
+        return 'inet'
 
     def _create_auth_cookie(self) -> str:
         return (
@@ -92,17 +92,20 @@ class Web(Response):
 
     async def _send_static(self) -> None:
         static_file = self.request['uri']
-        if not re.search(r'^/([a-z]+/)*[a-z\d._\-\?]+$', self.request['uri']):
+        if not re.search(r'^/([a-z]+/)*[a-z\d._\-]+$', self.request['uri']):
             raise RuntimeError('Web: invalid static URI', 404)
 
         await self._set_static(static_file)
 
     async def _send_webmanifest(self) -> None:
-        static_file = '/cams.webmanifest'
+        static_file = '/app.webmanifest'
         await self._set_static(static_file)
 
+        render = Render('', None, self.request['headers']['x-language'])
+
         self.body = self.body.replace(
-            b'{title}', self._get_title().encode('UTF-8')).replace(
+            b'{title}', render.title.encode('UTF-8')).replace(
+            b'{network}', self._get_network_type().encode('UTF-8')).replace(
             b'{uri}', self.request['uri'].replace(static_file, '').encode('UTF-8'))
 
     async def _set_static(self, static_file: str) -> None:
@@ -126,7 +129,7 @@ class Web(Response):
         if self.auth.info():
             self.headers.append(f'Set-Cookie: {self._create_auth_cookie()}')
 
-        render = Render(self._get_title(), self.hash, self.auth.info(), self.request['headers']['x-language'])
+        render = Render(self.hash, self.auth.info(), self.request['headers']['x-language'])
         self.body = (await render.get_html(page, self.request['uri'])).encode('UTF-8')
 
     async def _send_segment(self) -> None:

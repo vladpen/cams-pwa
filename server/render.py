@@ -14,13 +14,20 @@ from share import Share
 
 
 class Render:
-    def __init__(self, title: str, source_hash: str, auth_info: Optional[Dict[str, str]], language: str):
-        self.title = title
+    def __init__(self, source_hash: str, auth_info: Optional[Dict[str, str]], language: str):
         self.hash = source_hash
         self.auth_info = auth_info
         self.language = language
         self.cams = {}
         self.bell_hidden = 'hidden'
+
+        self.i18n = gettext.translation(
+            'base',
+            f'{os_path.dirname(os_path.realpath(__file__))}/../locale',
+            fallback=True,
+            languages=[self.language])
+
+        self.title = self.i18n.gettext('Cams')
 
     async def get_html(self, page: str, uri: str) -> str:
         """ Factory method to read and render a given template (page) in the global layout (/client/layout.html).
@@ -36,7 +43,7 @@ class Render:
 
         layout = await _read_file('layout.html')
         template = await _read_file(f'{page}.html')
-        template = await _replace_functions(template, self.language)
+        template = await self._replace_functions(template)
 
         html = layout.replace('{content}', template).replace('{uri}', uri)
 
@@ -119,39 +126,32 @@ class Render:
     def _render_auth(self) -> Dict[str, str]:
         return {'title': self.title}
 
+    async def _replace_functions(self, html: str) -> str:
+        match = re.findall(r'{([a-z_]+)\((.+?)\)}', html)
+        if not match:
+            return html  # Nothing to render
+
+        for pair in match:
+            function = pair[0]
+            args = pair[1]
+            if function == 'include':
+                html = await self._replace_include(html, args)
+            elif function == '_':
+                html = html.replace('{_(' + args + ')}', self.i18n.gettext(args))
+
+        return html
+
+    @staticmethod
+    async def _replace_include(html: str, file_name: str) -> str:
+        if not re.search(r'^[a-z\-]+\.[a-z]+$', file_name):
+            raise RuntimeError('Render: invalid included template')
+        return html.replace('{include(' + file_name + ')}', (await _read_file(file_name)))
+
 
 async def _read_file(file_name: str):
     return (
         await Response.read_file(f'{os_path.dirname(os_path.realpath(__file__))}/../client/{file_name}')
     ).decode()
-
-
-async def _replace_functions(html: str, language: str) -> str:
-    match = re.findall(r'{([a-z_]+)\((.+?)\)}', html)
-    if not match:
-        return html  # Nothing to render
-
-    i18n = gettext.translation(
-        'base',
-        f'{os_path.dirname(os_path.realpath(__file__))}/../locale',
-        fallback=True,
-        languages=[language])
-
-    for pair in match:
-        function = pair[0]
-        args = pair[1]
-        if function == 'include':
-            html = await _replace_include(html, args)
-        elif function == '_':
-            html = html.replace('{_(' + args + ')}', i18n.gettext(args))
-
-    return html
-
-
-async def _replace_include(html: str, file_name: str) -> str:
-    if not re.search(r'^[a-z\-]+\.[a-z]+$', file_name):
-        raise RuntimeError('Render: invalid included template')
-    return html.replace('{include(' + file_name + ')}', (await _read_file(file_name)))
 
 
 def _get_bell_time(cam_hash) -> str:

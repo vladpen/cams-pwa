@@ -3,8 +3,9 @@
     "name": "{title}",
     "icons": [
         {
-            "src": "/img/icon.svg",
-            "sizes": "any"
+            "src": "/img/icon_{network}.svg",
+            "sizes": "any",
+            "purpose": "maskable"
         }
     ],
     "background_color": "#000",
