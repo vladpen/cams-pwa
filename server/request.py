@@ -1,7 +1,7 @@
 import asyncio
 import re
 from ssl import SSLContext, PROTOCOL_TLS_SERVER
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 from typing import Dict
 
 from _config import Config
@@ -49,7 +49,7 @@ async def _handle(reader: asyncio.streams.StreamReader, writer: asyncio.streams.
 
     except Exception as e:
         error, code = e.args[0], e.args[1] if len(e.args) > 1 and isinstance(e.args[1], int) else 400
-        msg = f'{peer_name} > {host} "{start_line}"'
+        msg = f'{peer_name} > {host} "{unquote(start_line)}"'
         try:
             await Web.send_error(writer, code, msg, error)
         except Exception as ex:
