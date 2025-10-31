@@ -95,7 +95,7 @@ async def _parse_request(raw_request: str, peer_name: str) -> Dict:
         key, value = field.split(':', 1)
         request['headers'][key.lower()] = value.strip()
 
-    for field in ['host', 'accept', 'user-agent']:
+    for field in ['host', 'user-agent']:
         if field not in request['headers']:
             raise Exception(f'Request: empty required field "{field}"')
 
