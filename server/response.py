@@ -39,8 +39,8 @@ class Response:
 
         peer = self.request['headers']['x-real-ip']
         host = self.request['headers']['x-host']
-        nick = self.auth.info()['nick'] if self.auth.info() else '_'
-        log(f'Request {peer} ({nick}) > {host} "{unquote(request_start_line)}" 200')
+        ua = self.request['headers']['x-user-agent']
+        log(f'Request {peer} ({ua}) > {host} "{unquote(request_start_line)}" 200')
 
     @staticmethod
     async def read_file(filename: str) -> bytes:

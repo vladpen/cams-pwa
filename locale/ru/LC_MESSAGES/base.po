@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 
 "Project-Id-Version: 1.0\n"
-"PO-Revision-Date: 2025-10-27 08:30+0000\n"
+"PO-Revision-Date: 2025-11-01 08:30+0000\n"
 "Last-Translator: vladpen <vladpen@gmail.com>\n"
 "Language-Team: vladpen <vladpen@gmail.com>\n"
 "Language: ru\n"
@@ -17,9 +17,6 @@ msgstr ""
 
 msgid "Cams"
 msgstr "Камеры"
-
-msgid "Nick"
-msgstr "Имя"
 
 msgid "Hash"
 msgstr "Хеш"

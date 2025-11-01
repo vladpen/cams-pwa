@@ -7,6 +7,7 @@ Usage examples (for "cams-pwa" unit):
         journalctl -u cams-pwa -f
 """
 
+
 def log(message, is_error=False) -> None:
     prefix = '' if not is_error else '~ ERROR: '
     print(f'{prefix}{message.strip()}', flush=True)

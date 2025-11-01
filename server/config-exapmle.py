@@ -3,10 +3,10 @@ class Config:
     #    The keys of this dictionary will be called "camera hash".
     #    * "folder" is used for the storage.
     #    * "url" must contain at least <protocol>://<host>
-    #    * "name" is just visible camera name, can include emoji
+    #    * "name" is just visible camera name, can include emoji.
     #    * "codecs": RFC 6381 information about video/audio codecs (part of Media Source type),
-    #       for example: "hev1.1.6.L120.0" (H.265), "avc1.42E01E, mp4a.40.2" (H.264 with audio channel)
-    #    * "storage_command": can overwrite common command (set UDP mode here, enable audio channel, etc.)
+    #       for example: "hev1.1.6.L120.0" (H.265), "avc1.42E01E, mp4a.40.2" (H.264 with audio channel).
+    #    * "storage_command": can overwrite common command (set UDP mode here, enable audio channel, etc.).
     #    * "sensitivity" is used as threshold value for the Motion Detector.
     #       Must be more than 1. Set to 0 to disable.
     #

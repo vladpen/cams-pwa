@@ -109,10 +109,29 @@ async def _parse_request(raw_request: str, peer_name: str) -> Dict:
     request['headers']['x-language'] = _get_lang(request['headers'])
 
     request['body'] = request_parts[1] if len(request_parts) > 1 else ''
+
+    request['headers']['x-user-agent'] = normalize_ua(request['headers']['user-agent'])
+
     return request
 
 
-def _get_lang(headers):
+def normalize_ua(ua: str) -> str:
+    ua_os = re.search(r'.+(Windows|Macintosh|iPhone|iPad|iPod|Android \d+|Linux)', ua)
+    ua_browser = re.findall(
+        r'((?:Chrome|CriOS|Firefox|FxiOS|Safari|Edg|EdgA|EdgiOS|OPR|Vivaldi|Brave|YaBrowser|MiuiBrowser)\/\d+)',
+        ua)
+    out = []
+    if ua_os:
+        out.append(ua_os.group(1))
+    if ua_browser:
+        if len(ua_browser) > 1 and ua_browser[-1].startswith('Safari'):
+            out.append(ua_browser[-2])
+        else:
+            out.append(ua_browser[-1])
+    return ' '.join(out)
+
+
+def _get_lang(headers: Dict) -> str:
     lang = 'en'
     if 'accept-language' in headers:
         lang = headers['accept-language'].split(';', 1)[0].split(',', 1)[0].split('-', 1)[0]

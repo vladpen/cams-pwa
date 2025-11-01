@@ -67,7 +67,9 @@ class Web(Response):
             raise RuntimeError('Web: invalid post data', 403)
 
         self.headers = [f'Set-Cookie: {self._create_auth_cookie()}']
-        log(f"Web: logged in: {auth_info['nick']} > {auth_info['hash']}")
+        log(
+            f"+ Web: logged in: {self.request['headers']['x-real-ip']} ({self.request['headers']['x-user-agent']})"
+            f" > {self.request['headers']['x-host']} {auth_info['hash']}")
 
     def _get_network_type(self) -> str:
         host = self.request['headers']['host']
