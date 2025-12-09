@@ -1,155 +1,155 @@
-class Bell {
-    static run = () => {
+class Bell extends Config {
+    static _eventSource = null;
+
+    constructor() {
+        super();
+        const cams = this.getCams();
+        this._cams = {};
+        for (const id in cams) {
+            this._cams[cams[id].key] = id;
+        }
         this._btnBell = document.querySelector('header .bell-btn');
-        if (!this._btnBell || this._btnBell.classList.contains('hidden')) {
+        this._btnEvents = document.querySelector('.cam-header .link-btn');
+    }
+
+    run = () => {
+        if (!Object.keys(this._cams).length) {
             return;
         }
-        this._audio = new Audio('/bell.mp3');
-        this._fetchTimeoutId;
-        this._dimmTimeoutId;
-        this._lastDateTime = 0;
-        this._modal = document.querySelector('.modal');
-        this._abortController;
-        this._pending = false;
-
-        if (localStorage.getItem('bell')) {
-            this._toggleBtn();
+        if (sessionStorage.getItem('bell')) {
+            this._btnBell.classList.add('selected');
         }
         this._btnBell.onclick = this._toggleBtn;
 
-        window.onclick = e => {
-            this._modal.classList.add('hidden');
-            this._dimmOff();
-            if (e.target.tagName == 'A' || e.target.closest('.link')) {
-                this._pending = true;
-                if (this._abortController) {
-                    this._abortController.abort();
+        this._runSse();
+    }
+
+    _runSse = () => {
+        this._close_sse();
+
+        Bell._eventSource = new EventSource(
+            '/?bell=' + Number(sessionStorage.getItem('bell')) +
+            '&uid=' + this.getUid() +
+            '&keys=' + Object.keys(this._cams).join(','));
+
+        Bell._eventSource.onmessage = evt => {
+            try {
+                const data = JSON.parse(evt.data);
+
+                if (data.action == 'init') {
+                    this._handle_init(data.cams);
+                } else if (data.action == 'bell') {
+                    this._handle_bell(data.cams);
                 }
-            } else {
-                this._dimmOn();
+                if (this._cams) {
+                    this._btnBell.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('SSE onMessage:', err);
             }
         }
-        screen.orientation.onchange = this._dimmOn;
-    }
 
-    static wakeLock = () => {
-        this._wakeLock();
-        this._dimmOff();
-        this._isPlaying = true;
-    }
-
-    static wakeRelease = () => {
-        if (this._wakeLockSentinel && !this._btnBell.classList.contains('selected')) {
-            this._wakeLockSentinel.release();
+        Bell._eventSource.onerror = evt => {
+            console.error('SSE onError: readyState=' + evt.target.readyState);
         }
-        this._dimmOn();
-        this._isPlaying = false; // playing is off
     }
 
-    static _wakeLock = () => {
-        if (!'wakeLock' in navigator || !navigator.wakeLock ||
-            ('userAgentData' in navigator && !navigator.userAgentData.mobile)) {
-            return;
+    _handle_init = cams => {
+        let available_cams = {}
+        for (const key in cams) {
+            const events = Number(cams[key].events);
+            const time = cams[key].time;
+
+            const id = this._cams[key];
+            if (time) {
+                this._updateNavList(id, this._formatTime(time));
+            }
+            if (events && this._btnEvents && id == this._btnEvents.dataset.id) {
+                this._btnEvents.classList.remove('hidden');
+            }
         }
-        navigator.wakeLock.request('screen').then(wls => {
-            this._wakeLockSentinel = wls;
-        });
+
+        if (!this._btnBell) {
+            return
+        }
+        if (sessionStorage.getItem('bell')) {
+            this._btnBell.classList.add('selected');
+        } else {
+            this._close_sse();
+        }
     }
 
-    static _toggleBtn= () => {
+    _handle_bell = cams => {
+        let msg = '\r\n';
+        const all_cams = this.getCams();
+
+        for (const key in cams) {
+            const id = this._cams[key];
+            this._updateNavList(id, this._formatTime(cams[key]));
+
+            msg += '\r\n' + all_cams[id].name;
+        }
+        this._showNotification(msg);
+    }
+
+    _close_sse = () => {
+        if (Bell._eventSource) {
+            Bell._eventSource.close();
+            Bell._eventSource = null;
+        }
+    }
+
+    _formatTime = time => {
+        return time.slice(-6, -4) + ':' + time.slice(-4, -2);
+    }
+
+    _toggleBtn = () => {
         if (this._btnBell.classList.contains('selected')) {
             this._btnBell.classList.remove('selected');
-            localStorage.setItem('bell', '');
-            this._dimmOff();
-            if (this._wakeLockSentinel && !this._isPlaying) {
-                this._wakeLockSentinel.release();
-            }
-            if (this._abortController) {
-                this._abortController.abort();
-            }
+            sessionStorage.setItem('bell', '');
+            this.wakeRelease();
         } else {
-            this._btnBell.classList.add('selected');
-            localStorage.setItem('bell', '1');
-            this._fetch();
-            this._dimmOn();
-            this._wakeLock();
-        }
-    }
-
-    static _dimmOff = () => {
-        clearTimeout(this._dimmTimeoutId);
-        document.body.classList.remove('dimmed');
-    }
-
-    static _dimmOn = () => {
-        if (!this._btnBell.classList.contains('selected') || this._isPlaying ||
-            ('userAgentData' in navigator && !navigator.userAgentData.mobile)) {
-            return;
-        }
-        this._dimmOff();
-        if (this._btnBell.classList.contains('selected')) {
-            clearTimeout(this._dimmTimeoutId);
-            this._dimmTimeoutId = window.setTimeout(() => {
-                if (!this._isPlaying) {
-                    document.body.classList.add('dimmed');
+            Notification.requestPermission(res => {
+                if (res != 'granted') {
+                    console.error('Bell notification permission:', res);
                 }
-            }, 30000);
+            });
+            this._btnBell.classList.add('selected');
+            sessionStorage.setItem('bell', '1');
+            this.wakeLock();
         }
+        this._runSse();
     }
 
-    static _updateNavList = (hash, hm) => {
+    _updateNavList = (id, hm) => {
         const nav = document.querySelector('main .nav');
         if (!nav) {
             return;
         }
         for (const row of nav.querySelectorAll('li')) {
-            if (row.dataset.hash == hash) {
-                row.querySelector('i').textContent = hm;
-                break;
-            }
+            if (row.dataset.id != id) continue;
+            row.querySelector('i').textContent = hm;
+            break;
         }
     }
 
-    static _fetch = () => {
-        clearTimeout(this._fetchTimeoutId);
-        if (!this._btnBell.classList.contains('selected')) {
-            return;
-        }
-        this._abortController = new AbortController();
-        fetch(`/?bell=1&dt=${this._lastDateTime}`, {
-            cache: 'no-store',
-            signal: this._abortController.signal
-        })
-            .then(r => {
-                return r.json();
-            })
-            .then(data => {
-                this._fetchTimeoutId = window.setTimeout(this._fetch);
-                if (!Object.keys(data).length || !this._btnBell.classList.contains('selected')) {
-                    return
+    _showNotification = msg => {
+        navigator.serviceWorker.getRegistration()
+            .then(reg => {
+                if (!reg) {
+                    console.error('Bell: no active Service Worker Registration found.');
+                    return;
                 }
-                let res = []
-                Object.entries(data).forEach(([hash, row]) => {
-                    if (row.dt <= this._lastDateTime) {
-                        return;  // continue forEach
-                    }
-                    const hm = row.dt.slice(-6,-4) + ':' + row.dt.slice(-4,-2)
-                    res.push(`<a href="/?page=cam&hash=${hash}">${row.name}</a><i>${hm}<i>`);
-                    this._lastDateTime = row.dt;
-                    this._updateNavList(hash, hm);
+                reg.showNotification(document.documentElement.dataset.title, {
+                    body: msg,
+                    icon: '/img/icon.svg',
+                    tag: 'cams-pwa-event',
+                    renotify: true,
+                    // requireInteraction: true
                 });
-                if (!res.length) {
-                    return
-                }
-                this._modal.querySelector('.content').innerHTML = res.join('<br>');
-                this._modal.classList.remove('hidden');
-                document.body.classList.add('dimmed');
-                this._audio.play(); // can fall with "user didn't interact" exception, place this line at the end
             })
-            .catch(() => {
-                if (!this._pending) {
-                    this._fetchTimeoutId = window.setTimeout(this._fetch, 10000);
-                }
+            .catch(e => {
+                console.error('Bell: Service Worker Registration:', e);
             });
     }
 }

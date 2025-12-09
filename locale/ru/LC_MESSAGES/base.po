@@ -1,13 +1,12 @@
 # Localization strings
-# Compile .mo file:
+# Compile .mo file using gettext:
 # $ msgfmt base.po -o base.mo
-#
 
 msgid ""
 msgstr ""
 
 "Project-Id-Version: 1.0\n"
-"PO-Revision-Date: 2025-11-01 08:30+0000\n"
+"PO-Revision-Date: 2025-12-07 08:30+0000\n"
 "Last-Translator: vladpen <vladpen@gmail.com>\n"
 "Language-Team: vladpen <vladpen@gmail.com>\n"
 "Language: ru\n"
@@ -18,11 +17,56 @@ msgstr ""
 msgid "Cams"
 msgstr "Камеры"
 
-msgid "Hash"
-msgstr "Хеш"
+msgid "Add camera"
+msgstr "Добавить камеру"
 
-msgid "Password"
-msgstr "Пароль"
+msgid "Add group"
+msgstr "Добавить группу"
 
-msgid "Sign in"
-msgstr "Войти"
+msgid "Camera"
+msgstr "Камера"
+
+msgid "Group"
+msgstr "Группа"
+
+msgid "Name"
+msgstr "Название"
+
+msgid "Key"
+msgstr "Ключ"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "Export settings"
+msgstr "Экспорт настроек"
+
+msgid "Import settings"
+msgstr "Импорт настроек"
+
+msgid "About"
+msgstr "О программе"
+
+msgid "Export settings to the file"
+msgstr "Экспортировать настройки в файл"
+
+msgid "Replace existing settings?"
+msgstr "Заменить существующие настроки?"
+
+msgid "Invalid data!"
+msgstr "Неверные данные!"
+
+msgid "Camera already exists"
+msgstr "Камера уже существует"
+
+msgid "Group already exists"
+msgstr "Группа уже существует"
+
+msgid "At least 2 cameras"
+msgstr "Не менее двух камер"
+
+msgid "The camera is unavailable"
+msgstr "Камера недоступна"

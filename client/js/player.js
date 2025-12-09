@@ -1,37 +1,34 @@
 class Player extends Base {
-    constructor(video, hash, camInfo) {
+    constructor(video, key) {
         super();
         this._video = video;
-        this._hash = hash;
-        this._liveUrl = '/?video=live&dt={dt}&hash=' + hash;
-        this._rangeUrl = '/?video=range&range={range}&dt={dt}&hash=' + hash;
-        this._nextUrl = '/?video=next&step={step}&dt={dt}&hash=' + hash;
+        this._key = key;
+        this._liveUrl = '/?video=live&dt={dt}&key=' + key;
+        this._rangeUrl = '/?video=range&range={range}&dt={dt}&key=' + key;
+        this._nextUrl = '/?video=next&step={step}&dt={dt}&key=' + key;
         this._datetime = '';
         this._lock = false;
         this._setTime = 0;
         this._progress = false;
         this._abortController;
         this._sourceBuffer;
-        this._sourceType = `video/mp4; codecs="${camInfo['codecs']}"`;
+        this._codecs = 'avc1.42001f';
         this._mediaSource = new MediaSource();
         this._networkState = true;
+        this._events = false;
     }
 
     start = () => {
         this._setLiveMode();
 
-        if ('MediaSource' in window && MediaSource.isTypeSupported(this._sourceType)) {
-            this._mediaSource.addEventListener('sourceopen', this._onSourceOpen, { once: true });
-            this._video.src = URL.createObjectURL(this._mediaSource);
-            this._video.addEventListener('timeupdate', this._onTimeUpdate);
-        } else {
-            console.error('Unsupported MIME type or codec:', this._sourceType);
-            return;
-        }
+        this._mediaSource.addEventListener('sourceopen', this._onSourceOpen, { once: true });
+        this._video.src = URL.createObjectURL(this._mediaSource);
+        this._video.addEventListener('timeupdate', this._onTimeUpdate);
+
         if (!window.frameLoading) {
             window.frameLoading = {};
         }
-        window.frameLoading[this._hash] = 1;
+        window.frameLoading[this._key] = 1;
         setInterval(this._watchdog, 1000);
     }
 
@@ -64,14 +61,18 @@ class Player extends Base {
     }
 
     _onSourceOpen = () => {
-        this._sourceBuffer = this._mediaSource.addSourceBuffer(this._sourceType);
-        this._sourceBuffer.mode = 'sequence';
         this._fetch(this._liveUrl, {}, () => {
-            this._video.play().catch(e => {
-                console.error(e.message);
-                this.resizeBars();
-                this.showPlayBtn();
-            });
+            this._video.play()
+                .then(() => {
+                    if (this._events) {
+                        this.showLinkBtn();
+                    }
+                })
+                .catch(e => {
+                    console.error(e.message);
+                    this.resizeBars();
+                    this.showPlayBtn();
+                });
         });
     }
 
@@ -117,10 +118,11 @@ class Player extends Base {
     }
 
     _getUrl = (url, args = {}) => {
-        Object.entries(args).forEach(([key, val]) => {
-            url = url.replace('{' + key + '}', val);
-        });
-        url = url.replace('{dt}', this._datetime);
+        for (const key in args) {
+            url = url.replace('{' + key + '}', args[key]);
+        }
+        const dt = this._datetime ? this._datetime : '';
+        url = url.replace('{dt}', dt);
         if (this.btnMotion && this.btnMotion.classList.contains('selected')) {
             url += '&md=' + this.motionRange.value;
         }
@@ -155,22 +157,28 @@ class Player extends Base {
         this._abortController = new AbortController();
         this._progress = true;
 
-        let datetime, rng;
+        let rng;
 
         fetch(this._getUrl(url, args), {
             cache: 'no-store',
             signal: this._abortController.signal
         })
         .then(r => {
-            datetime = r.headers.get('x-datetime');
+            const datetime = r.headers.get('x-datetime');
+            this._datetime = datetime ? datetime : this._datetime;
             rng = r.headers.get('x-range');
+            const codecs = r.headers.get('x-codecs');
+            this._codecs = codecs ? codecs : this._codecs;
+            if (r.headers.get('x-events')) {
+                this._events = true;
+            }
             return r.arrayBuffer();
         })
         .then(data => {
             this._progress = false;
             this._networkState = true;
 
-            delete window.frameLoading[this._hash];
+            delete window.frameLoading[this._key];
             if (!Object.keys(window.frameLoading).length) {
                 this.loader.classList.add('hidden');
             }
@@ -181,13 +189,22 @@ class Player extends Base {
                 // the same segment received (on rangeChange), fetch next one immediately
                 return this._fetch(this._nextUrl, { step: 1 });
             }
+            if (!this._sourceBuffer) {
+                try {
+                    const sourceType = `video/mp4; codecs="${this._codecs}"`;
+                    this._sourceBuffer = this._mediaSource.addSourceBuffer(sourceType);
+                    this._sourceBuffer.mode = 'sequence';
+                } catch (e) {
+                    console.error('Error adding SourceBuffer:', e);
+                    return;
+                }
+            }
             this._sourceBuffer.appendBuffer(data);
 
-            this._datetime = datetime;
             if (this._playMode != 'live' && rng > this.MAX_RANGE) {
                 this._setLiveMode();
             }
-            if (this.timeRange && !this._lock) {
+            if (this.timeRange && !this._lock && rng) {
                 this.timeRange.value = rng;
             }
             if (callback) {

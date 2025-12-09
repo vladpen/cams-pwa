@@ -1,18 +1,24 @@
 <!DOCTYPE html>
-<html lang="{lang}">
+<html lang="{lang}" data-title="{title}">
 <head>
     <meta charset="UTF-8">
     <meta name="description" content="Cams PWA">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#000">
+    <meta name="darkreader-lock">
     <title>{title}</title>
     <link rel="manifest" href="/app.webmanifest{uri}">
     <link rel="icon" href="/img/icon.svg">
     <link rel="apple-touch-icon" href="/img/icon180.png">
-    <link rel="stylesheet" href="/layout.css">
+    <link rel="stylesheet" href="/layout.css?{start_dt}">
+    <script src="/js/config.js?{start_dt}"></script>
+    <script src="/js/bell.js?{start_dt}"></script>
 </head>
 <body>
-    <div class="modal hidden"><div class="content"></div> <b class="close">&times;</b></div>
     {content}
+    <script>
+        'serviceWorker' in navigator && window.addEventListener('load', navigator.serviceWorker.register('/sw.js'));
+        (new Bell()).run();
+    </script>
 </body>
 </html>

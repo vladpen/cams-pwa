@@ -1,88 +1,90 @@
-<header class="bar">
-    {include(top-bar.html)}
-    <span class="end-box">
-        <svg class="link-btn link {events_hidden}" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
-            <rect x="1" y="1" width="28" rx="3" ry="3" height="28" fill="none" stroke-width="2"/>
-            <polyline points="2,28 11,17 20,23 29,10" fill="none" stroke-width="2"/>
-            <circle cx="11" cy="10" r="2"/>
-        </svg>
-        <i class="bell-btn {bell_hidden}"></i>
-    </span>
+<header class="bar cam-header">
+    <span class="loader"></span>
+    {include(top_l.html)}
+    {include(top_r.html)}
+    <svg viewBox="0 0 30 30" class="link-svg">
+        <rect x="1" y="1" width="28" rx="3" ry="3" height="28" stroke-width="2"/>
+        <polyline points="2,28 11,17 20,23 29,10" stroke-width="2"/>
+        <circle cx="11" cy="10" r="2"/>
+    </svg>
 </header>
+
 <main class="fit-height">
     <div class="video-box">
         <video autoplay muted></video>
     </div>
 </main>
+
 <footer class="bar">
     <section>
         <span class="center">
             <span class="rwd arrow">
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-3600">
+                <svg viewBox="0 0 20 20" data-step="-3600">
                     <polyline points="10,2 1,10 10,18 1,10 19,10"/>
                 </svg>
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-600">
+                <svg viewBox="0 0 20 20" data-step="-600">
                     <polyline points="8,4 1,10 8,16 1,10 19,10"/>
                 </svg>
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-60">
+                <svg viewBox="0 0 20 20" data-step="-60">
                     <polyline points="6,6 1,10 6,14 1,10 19,10"/>
                 </svg>
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-2">
+                <svg viewBox="0 0 20 20" data-step="-2">
                     <polyline points="4,8 1,10 4,12 1,10 19,10"/>
                 </svg>
             </span>
             <span>
-                <svg class="play big hidden" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 20 20" class="play big hidden">
                     <polygon points="2,2 18,10 2,18" stroke-width="4"/>
                 </svg>
-                <svg class="pause big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <line x1="4" y1="3" x2="4" y2="17" stroke-width="6"/>
-                    <line x1="15" y1="3" x2="15" y2="17" stroke-width="6"/>
+                <svg viewBox="0 0 20 20" stroke-width="6" class="pause big">
+                    <line x1="4" y1="3" x2="4" y2="17"/>
+                    <line x1="15" y1="3" x2="15" y2="17"/>
                 </svg>
             </span>
-            <span class="arch disabled">
-                <input type="range" class="range speed-range hidden" value="5" min="2" max="10" step="1">
-                <input type="range" class="range motion-range hidden" value="50" min="0" max="90" step="10">
-                <svg class="speed big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <polyline points="10,2 6,11 14,9 10,18" fill="none" stroke-width="4"/>
+            <span class="arch {network} disabled">
+                <input type="range" class="range speed-range hidden" value="3" min="2" max="10" step="1" />
+                <input type="range" class="range motion-range hidden" value="50" min="0" max="90" step="10" />
+                <svg viewBox="0 0 20 20" class="speed big">
+                    <polyline points="10,2 6,11 14,9 10,18" stroke-width="4"/>
                 </svg>
-                <svg class="motion big" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 400 400" class="motion big">
                     <circle cx="40" cy="200" r="40"/>
-                    <path d="M 163 116 A 185 185 0 0 1 163 284" fill="none" stroke-width="80"/>
-                    <path d="M 294 50 A 330 330 0 0 1 294 355" fill="none" stroke-width="80"/>
+                    <path d="M 163 116 A 185 185 0 0 1 163 284" stroke-width="80"/>
+                    <path d="M 294 50 A 330 330 0 0 1 294 355" stroke-width="80"/>
                 </svg>
             </span>
             <span class="fwd arrow arch disabled">
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="1">
+                <svg viewBox="0 0 20 20" data-step="1">
                     <polyline points="1,10 19,10 16,8 19,10 16,12"/>
                 </svg>
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="60">
+                <svg viewBox="0 0 20 20" data-step="60">
                     <polyline points="1,10 19,10 14,6 19,10 14,14"/>
                 </svg>
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="600">
+                <svg viewBox="0 0 20 20" data-step="600">
                     <polyline points="1,10 19,10 12,4 19,10 12,16"/>
                 </svg>
-                <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="3600">
+                <svg viewBox="0 0 20 20" data-step="3600">
                     <polyline points="1,10 19,10 10,2 19,10 10,18"/>
                 </svg>
             </span>
         </span>
     </section>
     <section class="range-box dotted">
-        <input type="range" class="time-range" value="2000" min="0" max="2000">
+        <input type="range" class="time-range" value="2000" min="0" max="2000" />
     </section>
 </footer>
-<script src="/js/base.js"></script>
-<script src="/js/player.js"></script>
-<script src="/js/cam.js"></script>
-<script src="/js/bell.js"></script>
+
+<script src="/js/base.js?{start_dt}"></script>
+<script src="/js/player.js?{start_dt}"></script>
+<script src="/js/cam.js?{start_dt}"></script>
 <script>
-    const cam = new Cam(document.querySelector('video'), {cam_info}, {days});
-    cam.run();
-    if (!{is_system_busy}) {
-        Bell.run();
-    } else {
+    const cam = new Cam(document.querySelector('video'), {days});
+    if (!cam.run()) {
+        const p = document.createElement('p');
+        p.innerHTML = '{_(The camera is unavailable)}';
+        p.classList.add('error');
+        document.querySelector('.video-box').remove();
         document.querySelector('footer').remove();
-        document.querySelector('header .end-box').remove();
+        document.querySelector('main').append(p);
     }
 </script>

@@ -1,0 +1,41 @@
+<header class="bar">
+    {include(top_l.html)}
+    {include(top_r.html)}
+</header>
+
+<main>
+    <form class="edit-form">
+        <div class="row">
+            <p>{_(Name)}</p>
+            <input type="text" name="name" maxlength="32" minlength="3" required />
+        </div>
+        <div class="row">
+            <p>{_(Cams)}</p>
+            <ul class="cam-list nav">
+                <li class="hidden">
+                    <span></span>
+                    <svg viewBox="0 0 20 20" stroke-width="3">
+                        <line x1="3" y1="3" x2="17" y2="17"/>
+                        <line x1="17" y1="3" x2="3" y2="17"/>
+                    </svg>
+                </li>
+            </ul>
+            <select>
+                <option value="" disabled selected hidden>{_(Add camera)}</option>
+            </select>
+        </div>
+        <div class="error">&nbsp;</div>
+        <button type="submit" class="button">{_(Save)}</button>
+        <div class="delete"><span class="link">{_(Delete)}</span></div>
+    </form>
+</main>
+
+<script src="/js/group_edit.js"></script>
+<script>
+    const i18n = {
+        'Group already exists': '{_(Group already exists)}',
+        'At least 2 cameras': '{_(At least 2 cameras)}',
+        'Delete': '{_(Delete)}'
+    };
+    (new GroupEdit()).run();
+</script>

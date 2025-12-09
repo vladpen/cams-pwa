@@ -1,7 +1,6 @@
 import asyncio
 import re
 from datetime import datetime, timedelta
-from typing import Tuple, List, Dict, Any, Optional
 
 import const
 from _config import Config
@@ -13,17 +12,14 @@ class Videos:
     DEPTH = 3
     MD_AVERAGE_LEN = 10
 
-    def __init__(self, cam_hash: str):
-        self._hash = cam_hash
-        self._cam_path = f"{Config.storage_path}/{Config.cameras[self._hash]['folder']}"
+    def __init__(self, cam_key: str):
+        self._key = cam_key
+        self._cam_path = f"{Config.storage_path}/{Config.cameras[self._key]['folder']}"
         self._range = const.MAX_RANGE
         self._root_folder = []
         self._date_time = ''
 
-    def get_days(self) -> int:
-        return round((datetime.now() - self._get_start_date()).total_seconds() / 86400)
-
-    async def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int]:
+    async def get(self, args: dict[str, list]) -> tuple[str, int]:
         date_time = args['dt'][0] if 'dt' in args else ''
 
         if args['video'][0] == 'next':
@@ -52,7 +48,7 @@ class Videos:
         ).total_seconds()
         return str(round(const.MAX_RANGE * delta_seconds / total_seconds))
 
-    async def _get_live(self, date_time: Optional[str] = '', cnt: int = 0) -> Tuple[str, int]:
+    async def _get_live(self, date_time: str = '', cnt: int = 0) -> tuple[str, int]:
         cnt += 1
         if cnt > 20:  # 20 * 0.5 = 10 sec max (avoid "gateway timeout" error)
             return '', 0
@@ -71,7 +67,7 @@ class Videos:
         await asyncio.sleep(0.5)
         return await self._get_live(date_time, cnt)
 
-    async def _get_by_range(self, rng: int) -> Tuple[str, int]:
+    async def _get_by_range(self, rng: int) -> tuple[str, int]:
         rng = min(max(rng, 0), const.MAX_RANGE)
 
         start_date = self._get_start_date()
@@ -80,9 +76,10 @@ class Videos:
         wd = (start_date + timedelta(minutes=delta_minutes)).strftime(const.DT_PATH_FORMAT)
 
         parts = wd.split('/')
+
         return await self._find_nearest_file('/'.join(parts[0:-1]), parts[-1], 1)
 
-    async def _get_next(self, step: int, date_time: str, sensitivity: int) -> Tuple[str, int]:
+    async def _get_next(self, step: int, date_time: str, sensitivity: int) -> tuple[str, int]:
         if not date_time:
             return await self._get_live()
 
@@ -135,7 +132,7 @@ class Videos:
     def _get_start_date(self) -> datetime:
         return datetime.strptime(self._get_folders()[0], const.DT_ROOT_FORMAT)
 
-    async def _find_nearest_file(self, parent: str, folder: str, step: int) -> Tuple[str, int]:
+    async def _find_nearest_file(self, parent: str, folder: str, step: int) -> tuple[str, int]:
         """ If folder is set shift left (to parent folder); else shift right (to child folder) """
         parts = parent.split('/') if parent else []
 
@@ -174,7 +171,7 @@ class Videos:
 
         return '', 0
 
-    async def _get_next_motion(self, sensitivity: int, step: int) -> Tuple[str, int]:
+    async def _get_next_motion(self, sensitivity: int, step: int) -> tuple[str, int]:
         sign = 1 if step > 0 else -1
         if step >= 60 or step <= -60:
             folder = (
@@ -197,7 +194,7 @@ class Videos:
         return await self._motion_detector(folder, last_files, 100 - max(0, min(90, sensitivity)), sign)
 
     async def _motion_detector(
-            self, folder: str, last_files: Dict[str, int], sensitivity: int, sign: int) -> Tuple[str, int]:
+            self, folder: str, last_files: dict[str, int], sensitivity: int, sign: int) -> tuple[str, int]:
         requested_path = self._get_path_by_datetime(self._date_time)
         files = self._get_files(folder)
         if not files:
@@ -244,7 +241,7 @@ class Videos:
 
         return await self._motion_detector(next_folder, last_files, sensitivity, sign)
 
-    def _get_folders(self, folder: str = '') -> List[str]:
+    def _get_folders(self, folder: str = '') -> list[str]:
         if not folder and self._root_folder:
             return self._root_folder
         ls = get_execute(f'ls {self._cam_path}/{folder}').splitlines()
@@ -252,17 +249,17 @@ class Videos:
             self._root_folder = ls
         return ls
 
-    def _get_files(self, folder: str) -> List[str]:
+    def _get_files(self, folder: str) -> list[str]:
         wd = f"{self._cam_path}/{folder}"
         return get_execute(f'ls -l {wd} | awk ' + "'{print $5,$9}'").splitlines()
 
-    def _get_files_by_folders(self, folders: List[str]) -> List[str]:
+    def _get_files_by_folders(self, folders: list[str]) -> list[str]:
         paths = ''
         for folder in folders:
             paths = f'{paths}{self._cam_path}/{folder}/* '
         return get_execute(f'ls -l {paths} | awk ' + "'{print $5,$9}'").splitlines()
 
-    def _get_file(self, folder: str, position: int = 0) -> Tuple[str, int]:
+    def _get_file(self, folder: str, position: int = 0) -> tuple[str, int]:
         files = self._get_files(folder)
         if not files or len(files) <= position or len(files) < abs(position):
             return '', 0

@@ -2,7 +2,6 @@ import asyncio
 import re
 from ssl import SSLContext, PROTOCOL_TLS_SERVER
 from urllib.parse import urlparse, parse_qs, unquote
-from typing import Dict
 
 from _config import Config
 from web import Web
@@ -39,13 +38,13 @@ async def _handle(reader: asyncio.streams.StreamReader, writer: asyncio.streams.
         host = request['headers']['host']
         peer_name = request['headers']['x-real-ip']
 
-        web = Web(writer, request)
+        web = Web(writer, request, start_line)
         if request['method'] == 'POST':
             await web.do_post()
         else:
             await web.do_get()
 
-        await web.send(web.headers, web.body, start_line)
+        await web.send()
 
     except Exception as e:
         error, code = e.args[0], e.args[1] if len(e.args) > 1 and isinstance(e.args[1], int) else 400
@@ -65,7 +64,7 @@ async def _get_request(reader: asyncio.streams.StreamReader) -> str:
     return request
 
 
-async def _parse_request(raw_request: str, peer_name: str) -> Dict:
+async def _parse_request(raw_request: str, peer_name: str) -> dict:
     if not raw_request:
         raise Exception('Request: empty request')
 
@@ -116,9 +115,9 @@ async def _parse_request(raw_request: str, peer_name: str) -> Dict:
 
 
 def normalize_ua(ua: str) -> str:
-    ua_os = re.search(r'.+(Windows|Macintosh|iPhone|iPad|iPod|Android \d+|Linux)', ua)
+    ua_os = re.search(r'.+(Windows|Macintosh|iPhone|iPad|iPod|Android|Linux)', ua)
     ua_browser = re.findall(
-        r'((?:Chrome|CriOS|Firefox|FxiOS|Safari|Edg|EdgA|EdgiOS|OPR|Vivaldi|Brave|YaBrowser|MiuiBrowser)\/\d+)',
+        r'(Chrome|CriOS|Firefox|FxiOS|Safari|Edg|EdgA|EdgiOS|OPR|Vivaldi|Brave|YaBrowser|MiuiBrowser)/\d+',
         ua)
     out = []
     if ua_os:
@@ -131,7 +130,7 @@ def normalize_ua(ua: str) -> str:
     return ' '.join(out)
 
 
-def _get_lang(headers: Dict) -> str:
+def _get_lang(headers: dict) -> str:
     lang = 'en'
     if 'accept-language' in headers:
         lang = headers['accept-language'].split(';', 1)[0].split(',', 1)[0].split('-', 1)[0]

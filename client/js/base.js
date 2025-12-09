@@ -1,7 +1,7 @@
-class Base {
+class Base extends Config {
     ASPECT_RATIO = 16 / 9;
     MAX_SPEED_DESKTOP = 10;
-    MAX_SPEED_MOBILE = 3;
+    MAX_SPEED_MOBILE = 4;
     MAX_RANGE = 2000;
 
     header = document.querySelector('header');
@@ -15,29 +15,33 @@ class Base {
     timeRange = this.footer.querySelector('.time-range');
     loader = document.querySelector('.loader');
     _fadeTimeoutId = null;
+    _resizeBarsTimeoutId = null;
+
 
     resizeBars = () => {
         this.showBars();
 
-        const vp = window.visualViewport;
-        if ('userAgentData' in navigator && navigator.userAgentData.mobile) {
-            this.header.style.transform = 'scale(' + 1 / vp.scale + ')';
-            this.footer.style.transform = 'scale(' + 1 / vp.scale + ')';
+        clearTimeout(this._resizeBarsTimeoutId);
+        this._resizeBarsTimeoutId = setTimeout(() => {
+            const vp = window.visualViewport;
+            if ('userAgentData' in navigator && navigator.userAgentData.mobile) {
+                this.header.style.transform = 'scale(' + 1 / vp.scale + ')';
+                this.footer.style.transform = 'scale(' + 1 / vp.scale + ')';
 
-            this.header.style.left = vp.pageLeft + 'px';
-            this.header.style.top = vp.pageTop + 'px';
-            this.footer.style.left = vp.pageLeft + 'px';
-            this.footer.style.bottom = 'initial';
-            this.footer.style.top = vp.pageTop + vp.height - this.footer.offsetHeight / vp.scale + 'px';
-            // this.footer.style.bottom = ((1 - 1 / vp.scale) * window.outerHeight / 1.12 - vp.pageTop) + 'px';
-        }
-        if (this.speedRange) {
-            this.speedRange.classList.add('hidden');
-        }
-        if (this.motionRange) {
-            this.motionRange.classList.add('hidden');
-        }
-        this.fadeBars();
+                this.header.style.left = vp.pageLeft + 'px';
+                this.header.style.top = vp.pageTop + 'px';
+                this.footer.style.left = vp.pageLeft + 'px';
+                this.footer.style.bottom = 'initial';
+                this.footer.style.top = vp.pageTop + vp.height - this.footer.offsetHeight / vp.scale + 'px';
+            }
+            if (this.speedRange) {
+                this.speedRange.classList.add('hidden');
+            }
+            if (this.motionRange) {
+                this.motionRange.classList.add('hidden');
+            }
+            this.fadeBars();
+        }, 10);
     }
 
     hideBars = () => {
@@ -77,19 +81,23 @@ class Base {
         }
     }
 
-    back = () => {
-        this.header.querySelector('.back-btn').classList.add('blink');
-        const group_hash = sessionStorage.getItem('group_hash');
-        if (group_hash) {
-            document.location.href = `/?page=group&hash=${group_hash}`;
-        } else {
-            document.location.href = '/';
+    showLinkBtn = () => {
+        const linkBtn = this.header.querySelector('.link-btn');
+        if (linkBtn) {
+            linkBtn.classList.remove('hidden');
         }
     }
 
-    replaceLocation = href => {
-        this.header.querySelector('.link-btn').classList.add('blink');
-        document.location.replace(href);
+    back = () => {
+        this.isPlaying = false;
+        this.wakeRelease();
+        this.header.querySelector('.back-btn').classList.add('blink');
+        const group_id = sessionStorage.getItem('group_id');
+        if (group_id) {
+            document.location.href = `/?page=group&id=${group_id}`;
+        } else {
+            document.location.href = '/';
+        }
     }
 
     onWheel = (box, e) => {

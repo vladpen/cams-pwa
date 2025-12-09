@@ -13,16 +13,16 @@ def main() -> None:
         # Start one listener for all web clients
         tasks.append(listen_http)
 
-    for camera_hash in Config.cameras.keys():
+    for camera_key in Config.cameras.keys():
         if Config.storage_enabled:
             # Start streams saving
-            s = Storage(camera_hash)
+            s = Storage(camera_key)
             s.run()
             tasks.append(s.watchdog)
 
-        if Config.events_enabled and Config().cameras[camera_hash]['events']:
+        if Config.events_enabled and Config().cameras[camera_key]['events']:
             # Events checking & rotation
-            e = Events(camera_hash)
+            e = Events(camera_key)
             tasks.append(e.check)
 
     with ThreadPoolExecutor(len(tasks)) as executor:

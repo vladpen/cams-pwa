@@ -1,15 +1,26 @@
 class Cam extends Base {
-    constructor(video, camInfo, days) {
+    constructor(video, days) {
         super();
         this._video = video;
         this._days = days;
         const urlParams = new URLSearchParams(window.location.search);
-        this._hash = urlParams.get('hash');
-        this._player = new Player(video, this._hash, camInfo)
+        this._id = urlParams.get('id');
+        const cams = this.getCams();
+        this._cam = this._id && this._id in cams ? cams[this._id] : null;
     }
 
     run = () => {
         this.header.querySelector('.back-btn').onclick = this.back;
+
+        if (!this._cam) {
+            this.loader.classList.add('hidden');
+            return false;
+        }
+        this._player = new Player(this._video, this._cam.key);
+
+        document.title = this._cam.name;
+        document.querySelector('header .title').innerHTML = this._cam.name;
+
         document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;
         document.ontouchmove = e => {
@@ -17,6 +28,7 @@ class Cam extends Base {
                 this.hideBars();
             }
         }
+
         window.onresize = this._onResize;
         this._onResize();
 
@@ -57,21 +69,29 @@ class Cam extends Base {
 
         this.speedRange.onchange = () => {
             this._setPlaybackRate();
-            localStorage.setItem('speed_' + this._hash, this.speedRange.value);
+            sessionStorage.setItem('cam_speed', this.speedRange.value);
         };
         this.motionRange.onchange = () => {
-            localStorage.setItem('motion_' + this._hash, this.motionRange.value);
+            sessionStorage.setItem('cam_motion', this.motionRange.value);
         };
-        if (localStorage.getItem('speed_' + this._hash)) {
-            this.speedRange.value = localStorage.getItem('speed_' + this._hash);
+        if (sessionStorage.getItem('cam_speed')) {
+            this.speedRange.value = sessionStorage.getItem('cam_speed');
         }
-        if (localStorage.getItem('motion_' + this._hash)) {
-            this.motionRange.value = localStorage.getItem('motion_' + this._hash);
+        if (sessionStorage.getItem('cam_motion')) {
+            this.motionRange.value = sessionStorage.getItem('cam_motion');
         }
-        this.header.querySelector('.link-btn').onclick = () => {
-            this.replaceLocation(`/?page=events&hash=${this._hash}`);
+        const btnLink = this.header.querySelector('.link-btn');
+        const svgLink = this.header.querySelector('.link-svg');
+        btnLink.append(svgLink);
+        btnLink.setAttribute('data-id', this._id);
+        btnLink.onclick = () => {
+            btnLink.classList.add('blink');
+            document.location.replace(`/?page=events&id=${this._id}`);
         }
-        Bell.wakeLock();
+        this.isPlaying = true;
+        this.wakeLock();
+
+        return true;
     }
 
     _onRangeDown = () => {
@@ -89,12 +109,13 @@ class Cam extends Base {
             this._video.play();
             this.showPauseBtn();
             this._setPlaybackRate();
-            Bell.wakeLock();
+            this.isPlaying = true;
+            this.wakeLock();
         } else {
-            // this._video.play();
             this._video.pause();
             this.showPlayBtn();
-            Bell.wakeRelease();
+            this.isPlaying = false;
+            this.wakeRelease();
         }
     }
 
@@ -126,7 +147,7 @@ class Cam extends Base {
         }
     }
 
-    _onResize = () => {
+    _onResize = (e) => {
         this.hideBars();
         if (window.innerWidth / window.innerHeight > this.ASPECT_RATIO) {
             this._video.parentElement.classList.add('fit-height');  // left & right margins, height = 100%

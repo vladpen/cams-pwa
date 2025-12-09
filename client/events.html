@@ -1,61 +1,62 @@
-<header class="bar">
-    {include(top-bar.html)}
-    <span class="end-box">
-        <svg class="link-btn link" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-            <rect width="47" height="46" x="3" y="13" ry="4" stroke="#ffffff" stroke-width="6" stroke-linejoin="round" fill="none" />
-            <polyline points="50,29 69,17 69,55 50,43 50,29" stroke="#ffffff" stroke-width="6" stroke-linejoin="round" fill="none" />
-        </svg>
-        <i class="bell-btn {bell_hidden}"></i>
-    </span>
+<header class="bar events-header">
+    <span class="loader"></span>
+    {include(top_l.html)}
+    {include(top_r.html)}
+    <svg viewBox="0 0 72 72" stroke-width="6" stroke-linejoin="round" class="link-svg">
+        <rect width="47" height="46" x="3" y="13" ry="4"/>
+        <polyline points="50,29 69,17 69,55 50,43 50,29"/>
+    </svg>
 </header>
+
 <main class="fit-height events">
     <div class="image-box">
         <img/>
     </div>
 </main>
+
 <footer class="bar">
     <section class="chart">
-        <svg xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg></svg>
     </section>
     <section>
         <span class="center">
             <span class="rwd">
                 <span class="arrow">
-                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-100">
+                    <svg viewBox="0 0 20 20" data-step="-100">
                         <polyline points="8,4 1,10 8,16 1,10 19,10"/>
                     </svg>
-                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-10">
+                    <svg viewBox="0 0 20 20" data-step="-10">
                         <polyline points="6,6 1,10 6,14 1,10 19,10"/>
                     </svg>
-                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="-1">
+                    <svg viewBox="0 0 20 20" data-step="-1">
                         <polyline points="4,8 1,10 4,12 1,10 19,10"/>
                     </svg>
                 </span>
             </span>
             <span class="fwd disabled">
                 <span>
-                    <svg class="play big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <svg viewBox="0 0 20 20" class="play big">
                         <polygon points="2,2 18,10 2,18" stroke-width="4"/>
                     </svg>
-                    <svg class="pause big hidden" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <svg viewBox="0 0 20 20" class="pause big hidden">
                         <line x1="4" y1="3" x2="4" y2="17" stroke-width="6"/>
                         <line x1="15" y1="3" x2="15" y2="17" stroke-width="6"/>
                     </svg>
                 </span>
-                <span class="arch">
-                    <input type="range" class="range speed-range hidden" value="5" min="2" max="10" step="1" orient="vertical">
-                    <svg class="speed big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                        <polyline points="10,2 6,11 14,9 10,18" fill="none" stroke-width="4"/>
+                <span class="arch {network} arch-ext">
+                    <input type="range" class="range speed-range hidden" value="5" min="2" max="10" step="1" />
+                    <svg viewBox="0 0 20 20" class="speed big">
+                        <polyline points="10,2 6,11 14,9 10,18" stroke-width="4"/>
                     </svg>
                 </span>
                 <span class="arrow">
-                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="1">
+                    <svg viewBox="0 0 20 20" data-step="1">
                         <polyline points="1,10 19,10 16,8 19,10 16,12"/>
                     </svg>
-                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="10">
+                    <svg viewBox="0 0 20 20" data-step="10">
                         <polyline points="1,10 19,10 14,6 19,10 14,14"/>
                     </svg>
-                    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" data-step="100">
+                    <svg viewBox="0 0 20 20" data-step="100">
                         <polyline points="1,10 19,10 12,4 19,10 12,16"/>
                     </svg>
                 </span>
@@ -63,15 +64,13 @@
         </span>
     </section>
     <section class="range-box">
-        <input type="range" class="time-range" value="2000" min="0" max="2000">
+        <input type="range" class="time-range" value="2000" min="0" max="2000" />
     </section>
 </footer>
-<script src="/js/base.js"></script>
-<script src="/js/slider.js"></script>
-<script src="/js/events.js"></script>
-<script src="/js/bell.js"></script>
+
+<script src="/js/base.js?{start_dt}"></script>
+<script src="/js/slider.js?{start_dt}"></script>
+<script src="/js/events.js?{start_dt}"></script>
 <script>
-    const events = new Events(document.querySelector('.image-box img'), {cam_info}, {chart_data});
-    events.run();
-    Bell.run();
+    (new Events()).run();
 </script>

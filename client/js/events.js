@@ -1,19 +1,22 @@
 class Events extends Base {
-    constructor(image, camInfo, chartData) {
+    constructor() {
         super();
-        this._image = image;
+        this._image = document.querySelector('.image-box img');
         const urlParams = new URLSearchParams(window.location.search);
-        this._hash = urlParams.get('hash');
+        this._id = urlParams.get('id');
+        const cams = this.getCams();
+        this._cam = this._id in cams ? cams[this._id] : {};
         this._timeoutId;
-        this._slider = new Slider(image, this._hash, camInfo);
-        this._chartData = chartData;
+        this._slider = new Slider(this._image, this._cam.key);
     }
 
     run = () => {
-        this.header.querySelector('.back-btn').onclick = this.back;
-        this.header.querySelector('.link-btn').onclick = () => {
-            this.replaceLocation(`/?page=cam&hash=${this._hash}`);
-        }
+        this.header.querySelector('.back-btn').onclick = this._back;
+        const btnLink = this.header.querySelector('.link-btn');
+        const svgLink = this.header.querySelector('.link-svg');
+        btnLink.append(svgLink);
+        btnLink.classList.remove('hidden');
+        btnLink.onclick = this._back;
         document.querySelector('main').onclick = this.resizeBars;
         document.onscroll = this.hideBars;
         document.ontouchmove = e => {
@@ -21,6 +24,8 @@ class Events extends Base {
                 this.hideBars();
             }
         }
+        document.querySelector('header .title').innerHTML = this._cam.name;
+
         window.onresize = this._onResize;
         this._onResize();
 
@@ -50,12 +55,17 @@ class Events extends Base {
         this.btnSpeed.onclick = this._toggleSpeed;
 
         this.speedRange.onchange = () => {
-            localStorage.setItem('events_speed_' + this._hash, this.speedRange.value);
+            sessionStorage.setItem('events_speed', this.speedRange.value);
         };
-        if (localStorage.getItem('events_speed_' + this._hash)) {
-            this.speedRange.value = localStorage.getItem('events_speed_' + this._hash);
+        if (sessionStorage.getItem('events_speed')) {
+            this.speedRange.value = sessionStorage.getItem('events_speed');
         }
-        this._plotCart(this._chartData);
+        this._plotCart();
+    }
+
+    _back = e => {
+        e.target.classList.add('blink');
+        document.location.href = `/?page=cam&id=${this._id}`;
     }
 
     _onRangeDown = () => {
@@ -92,11 +102,11 @@ class Events extends Base {
         if (!this.btnPlay.classList.contains('hidden')) {
             this.showPauseBtn();
             this._next();
-            Bell.wakeLock();
+            this.wakeLock();
         } else {
             clearTimeout(this._timeoutId);
             this.showPlayBtn();
-            Bell.wakeRelease();
+            this.wakeRelease();
         }
     }
 
@@ -143,32 +153,44 @@ class Events extends Base {
         return 1000;
     }
 
-    _plotCart = (rawData) => {
-        if (rawData.length < 3) {
-            return;
-        }
-        const svg = this.footer.querySelector('.chart svg');
-        const barWidth = 100 / rawData.length;
-        const rectWidth = barWidth / 2;
-        const maxCount = Math.max(...rawData);
-        const minCount = Math.min(...rawData);
-        const chartData = [];
-        let offsetX = barWidth / 4;
-        rawData.forEach(cnt => {
-            const rectHeight = (cnt - minCount) * 100 / maxCount;
-            const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            bar.setAttribute('x', `${offsetX}%`);
-            bar.setAttribute('y', '100%');
-            bar.setAttribute('height', `${rectHeight}%`);
-            bar.setAttribute('width', `${rectWidth}%`);
-            svg.appendChild(bar);
-            offsetX += barWidth;
-            chartData.push([bar, 100 - rectHeight]);
-        });
-        setTimeout(() => {
-            chartData.forEach(bar => {
-                bar[0].setAttribute('y', `${bar[1]}%`);
+    _plotCart = () => {
+        fetch('/?chart=' + this._cam.key)
+            .then(r => {
+                if (!r.ok) {
+                    throw new Error(`fetch status: ${r.status}`);
+                }
+                return r.json();
+            })
+            .then(points => {
+                if (points.length < 3) {
+                    return;
+                }
+                const svg = this.footer.querySelector('.chart svg');
+                const barWidth = 100 / points.length;
+                const rectWidth = barWidth / 2;
+                const maxCount = Math.max(...points);
+                const minCount = Math.min(...points);
+                const chartData = [];
+                let offsetX = barWidth / 4;
+                for (const cnt of points) {
+                    const rectHeight = (cnt - minCount) * 100 / maxCount;
+                    const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    bar.setAttribute('x', `${offsetX}%`);
+                    bar.setAttribute('y', '100%');
+                    bar.setAttribute('height', `${rectHeight}%`);
+                    bar.setAttribute('width', `${rectWidth}%`);
+                    svg.append(bar);
+                    offsetX += barWidth;
+                    chartData.push([bar, 100 - rectHeight]);
+                }
+                setTimeout(() => {
+                    for (const bar of chartData) {
+                        bar[0].setAttribute('y', `${bar[1]}%`);
+                    }
+                }, 100);
+            })
+            .catch(e => {
+                console.error(e);
             });
-        }, 100);
     }
 }

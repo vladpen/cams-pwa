@@ -1,39 +1,53 @@
-<header class="fixed">
-    <span class="end-box">
-        <i class="bell-btn {bell_hidden}"></i>
+<header class="bar">
+    <span class="top-left">
+        <input id="menu-toggle" type="checkbox" />
+        <label class="menu-btn" for="menu-toggle"><span></span></label>
+        <ul class="menu-box">
+            <li><a href="/?page=cam_edit">{_(Add camera)}</a></li>
+            <li class="group-edit-link"><a href="/?page=group_edit">{_(Add group)}</a></li>
+            <li><hr></li>
+            <li class="export-link"><a href="#">{_(Export settings)}</a></li>
+            <li class="import-link">
+                <label>
+                    <a tabindex="-1">{_(Import settings)}</a>
+                    <input type="file" tabindex="-1" class="import-input" />
+                </label>
+            </li>
+            <li><hr></li>
+            <li><a href="https://github.com/vladpen/cams-pwa" target="_blank">{_(About)}</a></li>
+        </ul>
     </span>
+    {include(top_r.html)}
 </header>
 
-<main><ul class="nav"></ul></main>
+<main>
+    <ul class="nav">
+        <li class="hidden">
+            <a></a>
+            <b>
+                <svg viewBox="0 0 24 24">
+                    <path d="M1 23L6 23L23 6L18 1L1 18zM14 6L18 10M12 23L23 23"/>
+                </svg>
+            </b>
+        </li>
+    </ul>
+    <div class="empty-home hidden">
+        <button class="button"><a href="/?page=cam_edit">{_(Add camera)}</a></button>
+        <button class="button">
+            <label class="import-link">
+                <a tabindex="-1">{_(Import settings)}</a>
+                <input type="file" tabindex="-1" class="import-input" />
+            </label>
+        </button>
+        <a href="https://github.com/vladpen/cams-pwa" target="_blank" class="about">{_(About)}</a>
+    </div>
+</main>
 
-<script src="/js/base.js"></script>
-<script src="/js/bell.js"></script>
 <script>
-    const appendRow = (key, val, kind) => {
-        let li = document.createElement('li');
-        let a = document.createElement('a');
-        let i = document.createElement('i');
-        a.innerHTML = val.name;
-        if (val.bell) {
-            i.innerHTML = val.bell;
-        }
-        a.href = `/?page=${kind}&hash=${key}`;
-        li.classList.add(kind);
-        li.append(a);
-        a.append(i);
-        li.dataset.hash = key;
-        document.querySelector('ul').append(li);
-    }
-    for (const [key, val] of Object.entries({cams})) {
-        appendRow(key, val, 'cam');
-    }
-    sessionStorage.removeItem('group_hash');
-    if (!{is_system_busy}) {
-        for (const [key, val] of Object.entries({groups})) {
-            appendRow(key, val, 'group');
-        }
-        Bell.run();
-    } else {
-        document.querySelector('header .end-box').remove();
+    const i18n = {
+        'Export settings to': '{_(Export settings to the file)}',
+        'Invalid data': '{_(Invalid data!)}',
+        'Replace': '{_(Replace existing settings?)}'
     }
 </script>
+<script src="/js/home.js?{start_dt}"></script>

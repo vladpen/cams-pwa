@@ -1,0 +1,29 @@
+<header class="bar">
+    {include(top_l.html)}
+    {include(top_r.html)}
+</header>
+
+<main>
+    <form class="edit-form">
+        <div class="row">
+            <p>{_(Name)}</p>
+            <input type="text" name="name" minlength="3" maxlength="32" required />
+        </div>
+        <div class="row">
+            <p>{_(Key)}</p>
+            <input type="text" name="key" minlength="3" maxlength="32" required />
+        </div>
+        <div class="error">&nbsp;</div>
+        <button type="submit" class="button">{_(Save)}</button>
+        <div class="delete"><span class="link">{_(Delete)}</span></div>
+    </form>
+</main>
+
+<script src="/js/cam_edit.js"></script>
+<script>
+    const i18n = {
+        'Delete': '{_(Delete)}',
+        'Already exists': '{_(Camera already exists)}'
+    };
+    (new CamEdit()).run();
+</script>

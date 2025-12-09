@@ -1,8 +1,7 @@
 <header class="bar">
-    {include(top-bar.html)}
-    <span class="end-box">
-        <i class="bell-btn {bell_hidden}"></i>
-    </span>
+    <span class="loader"></span>
+    {include(top_l.html)}
+    {include(top_r.html)}
 </header>
 
 <main class="fit-height">
@@ -16,19 +15,16 @@
 <footer class="bar hidden invisible">
     <section>
         <span class="center">
-            <svg class="play big" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 20 20" class="play big">
                 <polygon points="2,2 18,10 2,18" stroke-width="4"/>
             </svg>
         </span>
     </section>
 </footer>
 
-<script src="/js/base.js"></script>
-<script src="/js/player.js"></script>
-<script src="/js/group.js"></script>
-<script src="/js/bell.js"></script>
+<script src="/js/base.js?{start_dt}"></script>
+<script src="/js/player.js?{start_dt}"></script>
+<script src="/js/group.js?{start_dt}"></script>
 <script>
-    const group = new Group({cams});
-    group.run();
-    Bell.run();
+    (new Group()).run();
 </script>

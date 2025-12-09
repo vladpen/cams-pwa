@@ -1,7 +1,6 @@
 import re
 import time
 from datetime import datetime, timedelta
-from typing import List
 
 import const
 from _config import Config
@@ -104,7 +103,7 @@ class Events:
 
         log(f'Events: cleanup done {self._hash}')
 
-    def _get_root_folders(self) -> List[str]:
+    def _get_root_folders(self) -> list[str]:
         if self._root_folders:
             return self._root_folders
         ls = get_execute(f'ls {self._events_path}').splitlines()

@@ -1,10 +1,10 @@
 class Slider extends Base {
-    constructor(image, hash, camInfo) {
+    constructor(image, key) {
         super();
         this._image = image;
-        this._hash = hash;
-        this._rangeUrl = '/?image=range&range={range}&pos={position}&hash=' + hash;
-        this._nextUrl = '/?image=next&step={step}&pos={position}&hash=' + hash;
+        this._key = key;
+        this._rangeUrl = '/?image=range&range={range}&pos={position}&key=' + key;
+        this._nextUrl = '/?image=next&step={step}&pos={position}&key=' + key;
         this._position = '';
         this._lock = false;
         this._loading = false;
@@ -44,9 +44,9 @@ class Slider extends Base {
     }
 
     _getUrl = (url, args = {}) => {
-        Object.entries(args).forEach(([key, val]) => {
-            url = url.replace('{' + key + '}', val);
-        });
+        for (const key in args) {
+            url = url.replace('{' + key + '}', args[key]);
+        }
         url = url.replace('{position}', this._position);
         return url;
     }
@@ -91,7 +91,7 @@ class Slider extends Base {
                     }
                 }
             })
-            .catch(error => {
+            .catch(() => {
                 this._loading = false;
             });
     }

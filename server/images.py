@@ -1,5 +1,3 @@
-from typing import Tuple, List, Any, Dict
-
 import const
 from _config import Config
 from execute import get_execute
@@ -12,7 +10,7 @@ class Images:
         self._events_path = f"{Config.events_path}/{self._cam_config['folder']}"
         self._root_folders = []
 
-    def get_chart_data(self) -> List[int]:
+    def get_chart_data(self) -> list[int]:
         cnt = []
         for folder in self._get_root_folders():
             wd = f"{self._events_path}/{folder}"
@@ -20,7 +18,7 @@ class Images:
             cnt.append(int(wd_count) if wd_count else 0)
         return cnt
 
-    def get(self, args: Dict[str, List[Any]]) -> Tuple[str, int, str, int]:
+    def get(self, args: dict[str, list]) -> tuple[str, int, str, int]:
         position = args['pos'][0].split('.') if 'pos' in args and '.' in args['pos'][0] else [-1, -1]
 
         if args['image'][0] == 'next':
@@ -33,7 +31,7 @@ class Images:
 
         return self._get_last()  # never happen
 
-    def _get_next(self, step: int, position: List[Any]) -> Tuple[str, int, str, int]:
+    def _get_next(self, step: int, position: list) -> tuple[str, int, str, int]:
         if step == 0:
             return self._get_last()
 
@@ -69,9 +67,13 @@ class Images:
 
         return self._get_next(step, [folder_idx, file_idx])
 
-    def _response(self, folders, files, folder_idx, file_idx) -> Tuple[str, int, str, int]:
+    def _response(self, folders, files, folder_idx, file_idx) -> tuple[str, int, str, int]:
         if not files:
             return '', 0, '', 0
+
+        file_idx = min(file_idx, len(files) - 1)
+        folder_idx = min(folder_idx, len(folders) - 1)
+
         range_folder = const.MAX_RANGE / len(folders)
         folder_range = range_folder * folder_idx
 
@@ -87,12 +89,15 @@ class Images:
         f = files[file_idx].split()
         return f'{self._events_path}/{folders[folder_idx]}/{f[1]}', int(f[0]), f'{folder_idx}.{file_idx}', rng
 
-    def _get_by_range(self, rng: int, position: List[int]) -> Tuple[str, int, str, int]:
+    def _get_by_range(self, rng: int, position: list[int]) -> tuple[str, int, str, int]:
         rng = min(max(rng, 0), const.MAX_RANGE - 1)
 
         folders = self._get_root_folders()
+        if not folders:
+            return '', 0, '', 0
+
         range_folder = int(const.MAX_RANGE / len(folders))
-        folder_idx = int(rng / range_folder)
+        folder_idx = min(int(rng / range_folder), len(folders) - 1)
 
         files = self._get_files(folders[folder_idx])
         file_idx = int((rng / range_folder - folder_idx) * len(files))
@@ -102,13 +107,13 @@ class Images:
 
         return self._response(folders, files, folder_idx, file_idx)
 
-    def _get_last(self) -> Tuple[str, int, str, int]:
+    def _get_last(self) -> tuple[str, int, str, int]:
         return self._get_file(-1, const.MAX_RANGE + 1)
 
-    def _get_first(self) -> Tuple[str, int, str, int]:
+    def _get_first(self) -> tuple[str, int, str, int]:
         return self._get_file(0, -1)
 
-    def _get_file(self, pos: int, rng: int) -> Tuple[str, int, str, int]:
+    def _get_file(self, pos: int, rng: int) -> tuple[str, int, str, int]:
         folders = self._get_root_folders()
         if not folders:
             return '', 0, '', rng
@@ -123,12 +128,12 @@ class Images:
         size = int(f[0])
         return path, size, '', rng
 
-    def _get_root_folders(self) -> List[str]:
+    def _get_root_folders(self) -> list[str]:
         if self._root_folders:
             return self._root_folders
         self._root_folders = get_execute(f'ls {self._events_path}').splitlines()
         return self._root_folders
 
-    def _get_files(self, folder: str) -> List[str]:
+    def _get_files(self, folder: str) -> list[str]:
         wd = f"{self._events_path}/{folder}"
         return get_execute(f'ls -l {wd} | awk ' + "'{print $5,$9}'").splitlines()
