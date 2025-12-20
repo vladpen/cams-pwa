@@ -42,7 +42,9 @@ class Config {
         }
         this._uid = localStorage.getItem('uid');
         if (!this._uid) {
-            this._uid = Math.random().toString(36).slice(2, 12);
+            const now = new Date();
+            this._uid = now.getMonth() + '' + now.getDate() + '-' + now.getHours() + '' + now.getMinutes()
+                + '-' + Math.random().toString(36).slice(2, 8);
             localStorage.setItem('uid', this._uid);
         }
         return this._uid;
