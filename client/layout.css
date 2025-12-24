@@ -4,6 +4,7 @@ html, body {
     overscroll-behavior: contain;
 }
 body.arch {background-color: #030;}
+body {--brightness: 1; filter: brightness(var(--brightness)); transition: all 1s ease;}
 
 .bar {position: fixed; width: 100%; z-index: 3; transform-origin: 0 0; color: #fff; opacity: 1; visibility: visible;}
 .bar span {display: inline-flex;}

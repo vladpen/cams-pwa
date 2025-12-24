@@ -10,6 +10,7 @@ class Bell extends Config {
         }
         this._btnBell = document.querySelector('header .bell-btn');
         this._btnEvents = document.querySelector('.cam-header .link-btn');
+        this._fadeTimeoutId = null;
     }
 
     run = () => {
@@ -26,6 +27,9 @@ class Bell extends Config {
 
     _runSse = () => {
         this._close_sse();
+
+        this._screenSaver();
+        document.body.onclick = this._screenSaver;
 
         Bell._eventSource = new EventSource(
             '/?bell=' + Number(sessionStorage.getItem('bell')) +
@@ -151,5 +155,17 @@ class Bell extends Config {
             .catch(e => {
                 console.error('Bell: Service Worker Registration:', e);
             });
+        this._screenSaver();
+    }
+
+    _screenSaver = () => {
+        clearTimeout(this._fadeTimeoutId);
+        document.body.style.setProperty('--brightness', 1);
+
+        if (!sessionStorage.getItem('bell') || this.isPlaying) return;
+
+        this._timeoutId = setTimeout(() => {
+            document.body.style.setProperty('--brightness', 0.4);
+        }, 300000); // 5 minutes
     }
 }
