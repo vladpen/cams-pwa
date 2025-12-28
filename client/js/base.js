@@ -83,7 +83,7 @@ class Base extends Config {
 
     showLinkBtn = () => {
         const linkBtn = this.header.querySelector('.link-btn');
-        if (linkBtn) {
+        if (linkBtn && linkBtn.hasAttribute('data-id')) {
             linkBtn.classList.remove('hidden');
         }
     }
