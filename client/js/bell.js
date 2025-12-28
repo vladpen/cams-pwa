@@ -162,10 +162,10 @@ class Bell extends Config {
         clearTimeout(this._fadeTimeoutId);
         document.body.style.setProperty('--brightness', 1);
 
-        if (!sessionStorage.getItem('bell') || this.isPlaying) return;
+        if (!sessionStorage.getItem('bell')) return;
 
         this._timeoutId = setTimeout(() => {
-            document.body.style.setProperty('--brightness', 0.4);
+            document.body.style.setProperty('--brightness', 0.5);
         }, 300000); // 5 minutes
     }
 }
