@@ -29,6 +29,9 @@
         li.dataset.id = id;
         li.classList.remove('hidden');
         navBox.append(li);
+        a.onclick = () => {
+            a.classList.add('blink');
+        }
         b.onclick = () => {
             b.classList.add('blink');
             document.location.href = `/?page=${kind}_edit&id=${id}`;

@@ -141,4 +141,9 @@ i.bell-btn:not(.selected) svg line {opacity: 1;}
 header, main, footer {transition: filter .3s ease;}
 .dimmed header, .dimmed main, .dimmed footer {filter: brightness(.5)}
 
-.blink {transition: opacity .2s ease; opacity: .3;}
+.blink {animation: blink .2s;}
+@keyframes blink {
+    0% {opacity: 1;}
+    50% {opacity: .3;}
+    100% {opacity: 1;}
+}
