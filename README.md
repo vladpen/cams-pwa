@@ -102,21 +102,25 @@ sudo systemctl start cams-pwa
 ```bash
 sudo openssl genrsa -out rootCA.key 4096
 sudo openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 \
-    -subj "/C=ХХ/L=Nsk/O=R&K/OU=R&K/CN=R&K" -out rootCA.crt
+    -subj "/O=org" -out rootCA.crt
 sudo chown $(whoami):$(whoami) rootCA.key
-openssl genrsa -out localhost.key 2048
-openssl req -new -sha256 -key localhost.key \
-    -subj "/C=ХХ/L=Nsk/O=localhost/OU=localhost/CN=localhost" -out localhost.csr
-openssl x509 -req -sha256 -in localhost.csr -out localhost.crt -days 3650 \
+openssl genrsa -out server.key 2048
+openssl req -new -sha256 -key server.key \
+    -subj "/O=host" -out server.csr
+openssl x509 -req -sha256 -in server.csr -out server.crt -days 3650 \
     -CAkey rootCA.key -CA rootCA.crt -CAcreateserial -extensions SAN \
     -extfile <(printf "[SAN]\nsubjectAltName=DNS:localhost,DNS:ваш-домен,IP:127.0.0.1,IP:ваш-ip")
 sudo chown root:root rootCA.key
 ```
 
 В этом случае корневой сертификат rootCA.crt следует импортировать в браузер в разделе
-[Менеджер сертификатов](chrome://certificate-manager/localcerts/usercerts).
+[Менеджер сертификатов](chrome://certificate-manager/localcerts/usercerts),
+а файлы server.crt и server.key скопировать в папку server
+и указать полные пути к ним в переменных ssl_certificate и ssl_private_key в файле server/_config.py.
 
 На мобильных устройствах корневой сертификат импортируется в разделе "Безопасность" в настройках системы.
+
+*Обратите внимание, что для безопасности ключ rootCA.key следует хранить в надёжном месте.*
 
 ### Интерфейс
 
