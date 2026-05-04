@@ -138,9 +138,6 @@ i.bell-btn:not(.selected) svg line {opacity: 1;}
 }
 .hidden, .bar .hidden, li.hidden {display: none;}
 
-header, main, footer {transition: filter .3s ease;}
-.dimmed header, .dimmed main, .dimmed footer {filter: brightness(.5)}
-
 .blink {animation: blink .2s;}
 @keyframes blink {
     0% {opacity: 1;}
