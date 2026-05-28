@@ -119,4 +119,8 @@
         inp.onchange = importCfg;
     }
     sessionStorage.removeItem('group_id');
+
+    if (!('MediaSource' in window)) {
+        alert('MediaSource not supported.');
+    }
 })();
