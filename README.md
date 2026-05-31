@@ -98,29 +98,39 @@ sudo systemctl start cams-pwa
 В таком случае просто пропустите этот раздел и оставьте поля ssl в конфигурации пустыми.
 
 Получить бесплатный сертификат можно в [центре сертификации Let's Encrypt](https://letsencrypt.org/ru/).
-Для тестирования в локальной сети можно создать самозаверенный сертификат, например так:
+Если вы не используете доменное имя или работаете в локальной сети, можно создать самозаверенный сертификат для IP-адресов, например так:
 ```bash
-sudo openssl genrsa -out rootCA.key 4096
-sudo openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 3650 \
-    -subj "/O=org" -out rootCA.crt
-sudo chown $(whoami):$(whoami) rootCA.key
-openssl genrsa -out server.key 2048
-openssl req -new -sha256 -key server.key \
-    -subj "/O=host" -out server.csr
-openssl x509 -req -sha256 -in server.csr -out server.crt -days 3650 \
-    -CAkey rootCA.key -CA rootCA.crt -CAcreateserial -extensions SAN \
-    -extfile <(printf "[SAN]\nsubjectAltName=DNS:localhost,DNS:ваш-домен,IP:127.0.0.1,IP:ваш-ip")
-sudo chown root:root rootCA.key
+openssl req -x509 -nodes \
+  -newkey RSA:2048       \
+  -keyout .ca.key        \
+  -days 3650             \
+  -out client.crt        \
+  -subj '/CN=myCA'
+```
+```bash
+openssl req -nodes   \
+  -newkey RSA:2048   \
+  -keyout server.key \
+  -out .ca.csr       \
+  -subj '/CN=camsPWA'
+```
+```bash
+openssl x509 -req                        \
+  -CA client.crt                         \
+  -CAkey .ca.key                         \
+  -in .ca.csr                            \
+  -out server.crt                        \
+  -set_serial "0x$(openssl rand -hex 8)" \
+  -days 3650                             \
+  -extfile <(printf "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:ваш.ip.адрес\nauthorityKeyIdentifier=keyid,issuer\nbasicConstraints=CA:FALSE\nkeyUsage=digitalSignature, keyEncipherment\nextendedKeyUsage=serverAuth")
 ```
 
-В этом случае корневой сертификат rootCA.crt следует импортировать в браузер в разделе
+В этом случае корневой сертификат центра сертификации client.crt следует импортировать в браузер в разделе
 [Менеджер сертификатов](chrome://certificate-manager/localcerts/usercerts),
 а файлы server.crt и server.key скопировать в папку server
 и указать полные пути к ним в переменных ssl_certificate и ssl_private_key в файле server/_config.py.
 
-На мобильных устройствах корневой сертификат импортируется в разделе "Безопасность" в настройках системы.
-
-*Обратите внимание, что для безопасности ключ rootCA.key следует хранить в надёжном месте.*
+На мобильных устройствах корневой сертификат импортируется в настройках безопасности системы.
 
 ### Интерфейс
 
