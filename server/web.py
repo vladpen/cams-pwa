@@ -127,8 +127,8 @@ class Web(Response):
         ]
         if not query_date_time:  # first request (onSourceOpen)
             self.headers += [
-                f'X-Codecs: {Config.cameras[key]['codecs']}',
-                f'X-Events: {int(Config.cameras[key]['events'])}']
+                f'X-Codecs: {Config.cameras[key]["codecs"]}',
+                f'X-Events: {int(Config.cameras[key]["events"])}']
         self.body = await Response.read_file(file_path)
 
     async def _send_image(self) -> None:

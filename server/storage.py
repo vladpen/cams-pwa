@@ -52,7 +52,7 @@ class Storage:
             log(f'Storage: OFFLINE: {self._key} ({cam_ip[0]})')
             return
 
-        cmd = cmd.replace('{url}', f'"{cfg['url']}"').replace('{cam_path}', f'{self._cam_path}')
+        cmd = cmd.replace('{url}', f'"{cfg["url"]}"').replace('{cam_path}', f'{self._cam_path}')
 
         self._main_process = execute_async(cmd)
 

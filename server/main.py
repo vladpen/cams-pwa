@@ -6,7 +6,7 @@ from storage import Storage
 from events import Events
 
 
-def main() -> None:
+def main():
     tasks = []
 
     if Config.web_enabled:
